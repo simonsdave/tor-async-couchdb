@@ -8,13 +8,12 @@ _tampering_sig_prop_name = "801dbe4659a641739cbe94fcf0baab03_tampering_v1.0_sig"
 def sign(signer, doc):
     (_, doc_as_utf8_str) = _prep_doc_for_signing_and_verification(doc)
     sig = signer.Sign(doc_as_utf8_str)
-    doc[_tampering_sig_prop_name] = sig
+    if sig is not None:
+        doc[_tampering_sig_prop_name] = sig
     return doc
 
 def verify(signer, doc):
     (sig, doc_as_utf8_str) = _prep_doc_for_signing_and_verification(doc)
-    if sig is None:
-        return False
     return signer.Verify(doc_as_utf8_str, sig)
 
 def _prep_doc_for_signing_and_verification(doc):
