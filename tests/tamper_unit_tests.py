@@ -107,3 +107,29 @@ class TamperTestCase(unittest.TestCase):
             self.assertEqual(len(doc), pre_sign_doc_len)
 
             self.assertFalse(tamper.verify(signer, doc))
+
+    def test_verify_fails_when_sig_tampered_with(self):
+
+        with TempDirectory() as dir_name:
+            keyczart.Create(
+                dir_name,
+                "some purpose",
+                keyczart.keyinfo.SIGN_AND_VERIFY)
+
+            keyczart.AddKey(
+                dir_name,
+                keyczart.keyinfo.PRIMARY)
+
+            signer = keyczar.Signer.Read(dir_name)
+
+            doc = {
+                "dave": "was",
+                "here": "today",
+            }
+            pre_sign_doc_len = len(doc)
+            tamper.sign(signer, doc)
+            self.assertEqual(len(doc), 1 + pre_sign_doc_len)
+
+            doc[tamper._tampering_sig_prop_name] = "dave"
+
+            self.assertFalse(tamper.verify(signer, doc))

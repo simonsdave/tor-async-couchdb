@@ -33,7 +33,14 @@ def verify(signer, doc):
     (sig, doc_as_utf8_str) = _prep_doc_for_signing_and_verification(doc)
     if sig is None:
         return False
-    return signer.Verify(doc_as_utf8_str, sig)
+    # the try/except is here to catch the scenarios like the signature
+    # being tampered with - try verifying a doc's signature using a
+    # signature of "dave" and you'll understand the need
+    try:
+        return signer.Verify(doc_as_utf8_str, sig)
+    except:
+        pass
+    return False
 
 def _prep_doc_for_signing_and_verification(doc):
     """This method have an important and tricky responsiblity. This method
