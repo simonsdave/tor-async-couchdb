@@ -21,13 +21,9 @@ import requests
 import tornado.testing
 import tornado.web
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import async_model_actions
-from async_model_actions import AsyncModelRetriever
-from async_model_actions import AsyncModelsRetriever
-from async_model_actions import AsyncPersister
-from model import Model
-import tamper
+from .. import async_model_actions
+from .. import tamper
+from ..model import Model
 
 _user_store_url = r"http://127.0.0.1:5984/davewashere"
 
@@ -82,16 +78,16 @@ class Boo(Model):
         return rv
 
 
-class AsyncBooPersister(AsyncPersister):
+class AsyncBooPersister(async_model_actions.AsyncPersister):
 
     def __init__(self, boo, async_state=None):
-        AsyncPersister.__init__(self, boo, [], async_state)
+        async_model_actions.AsyncPersister.__init__(self, boo, [], async_state)
 
 
-class AsyncBooRetriever(AsyncModelRetriever):
+class AsyncBooRetriever(async_model_actions.AsyncModelRetriever):
 
     def __init__(self, boo_id, async_state=None):
-        AsyncModelRetriever.__init__(
+        async_model_actions.AsyncModelRetriever.__init__(
             self,
             "boo_by_boo_id",
             boo_id,
@@ -101,10 +97,10 @@ class AsyncBooRetriever(AsyncModelRetriever):
         return Boo(doc=doc)
 
 
-class AsyncBoosRetriever(AsyncModelsRetriever):
+class AsyncBoosRetriever(async_model_actions.AsyncModelsRetriever):
 
     def __init__(self, async_state=None):
-        AsyncModelsRetriever.__init__(
+        async_model_actions.AsyncModelsRetriever.__init__(
             self,
             "boo_by_boo_id",
             async_state)

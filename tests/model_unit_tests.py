@@ -6,8 +6,7 @@ import sys
 import unittest
 import uuid
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from model import Model
+from ..model import Model
 
 
 class ModelTaseCase(unittest.TestCase):

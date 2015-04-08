@@ -8,12 +8,12 @@ import sys
 import unittest
 import uuid
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from async_model_actions import AsyncModelRetriever
-from async_model_actions import AsyncModelsRetriever
-from async_model_actions import AsyncUserStoreHealthCheck
-from async_model_actions import AsyncPersister
-from model import Model
+from ..async_model_actions import AsyncModelRetriever
+from ..async_model_actions import AsyncModelsRetriever
+from ..async_model_actions import AsyncPersister
+from ..async_model_actions import AsyncUserStoreHealthCheck
+from ..model import Model
+from .. import async_model_actions
 
 
 class Patcher(object):
@@ -38,7 +38,7 @@ class AsyncUserStoreActionPatcher(Patcher):
             callback(is_ok, is_conflict, models, _id, _rev, ausa)
 
         patcher = mock.patch(
-            "async_model_actions._AsyncUserStoreAction.fetch",
+            __name__ + ".async_model_actions._AsyncUserStoreAction.fetch",
             fetch_patch)
 
         Patcher.__init__(self, patcher)

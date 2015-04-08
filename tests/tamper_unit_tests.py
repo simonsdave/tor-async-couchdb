@@ -10,8 +10,7 @@ from keyczar import keyczar
 from keyczar import keyczart
 import mock
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-import tamper
+from .. import tamper
 
 
 class TempDirectory(object):
