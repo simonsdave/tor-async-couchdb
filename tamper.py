@@ -5,7 +5,7 @@ a key that is accessible to only the app tier and the app tier
 administrator. The key would not be accessible to the database
 administrator. When a document is read from the CouchDB database
 the signature is verified and if signature vertification fails
-thet document is discarded after an alarm is raised. 
+thet document is discarded after an alarm is raised.
 """
 
 import json

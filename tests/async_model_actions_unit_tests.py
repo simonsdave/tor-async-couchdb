@@ -145,7 +145,7 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
             bad.create_model_from_doc({})
 
         class Good(Bad):
-            def create_model_from_doc(self, doc):         
+            def create_model_from_doc(self, doc):
                 pass
 
         good = Good(None, None, None)
@@ -223,7 +223,7 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
             bad.create_model_from_doc({})
 
         class Good(Bad):
-            def create_model_from_doc(self, doc):         
+            def create_model_from_doc(self, doc):
                 pass
 
         good = Good(None, None)

@@ -186,7 +186,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         -- create a tampering signer
         -- configure the async model I/O classes to use the newly
         created tampering signer and temporary database
-        
+
         """
         # in case a previous test didn't clean itself up delete database
         # totally ignoring the result
@@ -303,7 +303,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
     def _get_boo(self, boo_id):
         """Ask the request handler to retrieve a persisted Boo."""
         body = {
-            "boo_id": boo_id,        
+            "boo_id": boo_id,
         }
         headers = {
             "content-type": "application/json; charset=utf-8",
@@ -333,7 +333,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(response.code, httplib.OK)
         docs = json.loads(response.body)
         boos = [Boo(doc=doc) for doc in docs]
-        return boos            
+        return boos
 
     def _change_boo_fruit_and_persist(self, boo):
         self.assertIsNotNone(boo)
