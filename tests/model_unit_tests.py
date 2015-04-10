@@ -1,8 +1,5 @@
 """This module implements a unit tests for the model module."""
 
-import os
-import re
-import sys
 import unittest
 import uuid
 

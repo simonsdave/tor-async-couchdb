@@ -2,7 +2,6 @@
 async actions against the User Store (implemented using CouchDB).
 """
 
-import hashlib
 import httplib
 import json
 import logging

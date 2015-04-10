@@ -1,14 +1,11 @@
 """This module contains the tamper module's unit tests."""
 
-import os
 import shutil
-import sys
 import tempfile
 import unittest
 
 from keyczar import keyczar
 from keyczar import keyczart
-import mock
 
 from .. import tamper
 

@@ -7,12 +7,9 @@ Be warned - this test suite feels complicated.
 
 import httplib
 import json
-import os
 import shutil
-import sys
 import tempfile
 import random
-import urllib
 import uuid
 
 from keyczar import keyczar
@@ -223,7 +220,6 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         # get async_model_actions using our tampering signer
         async_model_actions.tampering_signer = tampering_signer
 
-
     @classmethod
     def tearDownClass(cls):
         # delete database
@@ -283,7 +279,6 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         self.assertTwoCollectionsOfBoosAreEqual(
             boos,
             self._get_all_boos())
-
 
     def _create_boo(self):
         """Ask the request handler to create a persistent instance of Boo."""

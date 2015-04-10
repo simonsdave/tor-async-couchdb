@@ -1,10 +1,7 @@
 """This module implements a collection of unit tests for
 the async_model_actions.py module."""
 
-import httplib
-import os
 import mock
-import sys
 import unittest
 import uuid
 

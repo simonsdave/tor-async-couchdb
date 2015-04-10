@@ -59,7 +59,7 @@ def _is_couchdb_accessible(host, auth, verify_host_ssl_cert):
     """
     try:
         response = requests.get(host, auth=auth, verify=verify_host_ssl_cert)
-    except Exception as ex:
+    except Exception:
         return False
 
     return response.status_code == httplib.OK

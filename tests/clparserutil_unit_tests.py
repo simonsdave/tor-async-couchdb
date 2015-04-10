@@ -2,8 +2,6 @@
 
 import logging
 import optparse
-import os
-import sys
 import unittest
 
 from .. import clparserutil

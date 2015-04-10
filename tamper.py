@@ -12,6 +12,7 @@ import json
 
 _tampering_sig_prop_name = "801dbe4659a641739cbe94fcf0baab03_tampering_v1.0_sig"
 
+
 def sign(signer, doc):
     """This method should be called just before ```doc``` (a dictionary)
     is written to CouchDB. The method adds a signature to ```doc``` using
@@ -22,6 +23,7 @@ def sign(signer, doc):
     (_, doc_as_utf8_str) = _prep_doc_for_signing_and_verification(doc)
     doc[_tampering_sig_prop_name] = signer.Sign(doc_as_utf8_str)
     return doc
+
 
 def verify(signer, doc):
     """This method should be called just after ```doc``` (a dictionary)
@@ -41,6 +43,7 @@ def verify(signer, doc):
     except:
         pass
     return False
+
 
 def _prep_doc_for_signing_and_verification(doc):
     """This method have an important and tricky responsiblity. This method
