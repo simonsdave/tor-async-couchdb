@@ -10,7 +10,7 @@ from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
 from ..async_model_actions import AsyncUserStoreHealthCheck
 from ..model import Model
-from .. import async_model_actions
+from .. import async_model_actions  # noqa, needed for patching using relative path
 
 
 class Patcher(object):
