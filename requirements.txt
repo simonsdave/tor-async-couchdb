@@ -1,0 +1,15 @@
+# runtime ...
+tornado==4.1
+# dev & test ...
+flake8==2.4.0
+mock==1.0.1
+nose==1.3.6
+nose-cov==1.6
+nose-pudb==1.0
+# flake8 2.4.0 is incompatible with pep8 > 1.6
+# See https://gitlab.com/pycqa/flake8/issues/32
+pep8==1.5.7
+pudb==2015.2
+radon==1.2
+# testing
+# not sure where these will end up
