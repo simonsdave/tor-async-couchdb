@@ -1,5 +1,7 @@
 # runtime ...
 tornado==4.1
+python-keyczar==0.715
+requests==2.6.0
 # dev & test ...
 flake8==2.4.0
 mock==1.0.1
