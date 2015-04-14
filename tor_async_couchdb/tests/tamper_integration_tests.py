@@ -41,20 +41,6 @@ _design_doc = _design_doc.replace("%VIEW_NAME%", _design_doc_name)
 
 class Boo(Model):
 
-    @classmethod
-    def get_random_fruit(cls, but_not_this_fruit=None):
-        fruits = [
-            "apple",
-            "pear",
-            "fig",
-            "orange",
-            "kiwi",
-        ]
-        while True:
-            fruit = fruits[random.randint(0, len(fruits)) - 1]
-            if but_not_this_fruit is None or (but_not_this_fruit is not None and but_not_this_fruit != fruit):
-                return fruit
-
     def __init__(self, **kwargs):
         Model.__init__(self, **kwargs)
 
@@ -73,6 +59,22 @@ class Boo(Model):
         rv["boo_id"] = self.boo_id
         rv["fruit"] = self.fruit
         return rv
+
+    @classmethod
+    def get_random_fruit(cls, but_not_this_fruit=None):
+        fruits = [
+            "apple",
+            "pear",
+            "fig",
+            "orange",
+            "kiwi",
+        ]
+        while True:
+            fruit = random.choice(fruits)
+            if but_not_this_fruit is None:
+                return fruit
+            if but_not_this_fruit != fruit:
+                return fruit
 
 
 class AsyncBooPersister(async_model_actions.AsyncPersister):
