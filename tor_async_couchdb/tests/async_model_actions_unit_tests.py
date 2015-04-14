@@ -13,11 +13,16 @@ from ..model import Model
 from .. import async_model_actions  # noqa, needed for patching using relative path
 
 
-class Patcher(object):
+class AsyncUserStoreActionPatcher(object):
 
-    def __init__(self, patcher):
-        object.__init__(self)
-        self._patcher = patcher
+    def __init__(self, is_ok, is_conflict, models, _id, _rev):
+
+        def fetch_patch(ausa, callback):
+            callback(is_ok, is_conflict, models, _id, _rev, ausa)
+
+        self._patcher = mock.patch(
+            __name__ + ".async_model_actions._AsyncUserStoreAction.fetch",
+            fetch_patch)
 
     def __enter__(self):
         self._patcher.start()
@@ -25,20 +30,6 @@ class Patcher(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._patcher.stop()
-
-
-class AsyncUserStoreActionPatcher(Patcher):
-
-    def __init__(self, is_ok, is_conflict, models, _id, _rev):
-
-        def fetch_patch(ausa, callback):
-            callback(is_ok, is_conflict, models, _id, _rev, ausa)
-
-        patcher = mock.patch(
-            __name__ + ".async_model_actions._AsyncUserStoreAction.fetch",
-            fetch_patch)
-
-        Patcher.__init__(self, patcher)
 
 
 class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
