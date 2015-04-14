@@ -22,7 +22,7 @@ from .. import async_model_actions
 from .. import tamper
 from ..model import Model
 
-_user_store_url = r"http://127.0.0.1:5984/davewashere"
+_database_url = r"http://127.0.0.1:5984/davewashere"
 
 # curl http://127.0.0.1:5984/davewashere/_design/boo_by_boo_id/_view/boo_by_boo_id?include_docs=true
 _design_doc_name = "boo_by_boo_id"
@@ -189,13 +189,13 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         """
         # in case a previous test didn't clean itself up delete database
         # totally ignoring the result
-        response = requests.delete(_user_store_url)
+        response = requests.delete(_database_url)
         # create database
-        response = requests.put(_user_store_url)
+        response = requests.put(_database_url)
         assert response.status_code == httplib.CREATED
 
         # install design doc
-        url = "%s/_design/%s" % (_user_store_url, _design_doc_name)
+        url = "%s/_design/%s" % (_database_url, _design_doc_name)
         response = requests.put(
             url,
             data=_design_doc,
@@ -203,7 +203,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         assert response.status_code == httplib.CREATED
 
         # get async_model_actions using our temp database
-        async_model_actions.user_store = _user_store_url
+        async_model_actions.database = _database_url
 
         # create a tampering signer and get async_model_actions using it
         tampering_dir_name = tempfile.mkdtemp()
@@ -225,7 +225,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
     @classmethod
     def tearDownClass(cls):
         # delete database
-        response = requests.delete(_user_store_url)
+        response = requests.delete(_database_url)
         assert response.status_code == httplib.OK
 
     def get_app(self):
@@ -335,7 +335,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
     def _change_boo_fruit_and_persist(self, boo):
         self.assertIsNotNone(boo)
 
-        url = '%s/%s' % (_user_store_url, boo._id)
+        url = '%s/%s' % (_database_url, boo._id)
 
         response = requests.get(url)
         self.assertEqual(response.status_code, httplib.OK)
@@ -358,7 +358,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
     def _remove_boo_signature_and_persist(self, boo):
         self.assertIsNotNone(boo)
 
-        url = '%s/%s' % (_user_store_url, boo._id)
+        url = '%s/%s' % (_database_url, boo._id)
 
         response = requests.get(url)
         self.assertEqual(response.status_code, httplib.OK)
@@ -377,7 +377,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
     def _change_boo_signature_and_persist(self, boo):
         self.assertIsNotNone(boo)
 
-        url = '%s/%s' % (_user_store_url, boo._id)
+        url = '%s/%s' % (_database_url, boo._id)
 
         response = requests.get(url)
         self.assertEqual(response.status_code, httplib.OK)

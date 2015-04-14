@@ -315,7 +315,7 @@ class AsyncUserStoreHealthCheckCheckUnitTaseCase(unittest.TestCase):
 
             the_aushc.check(callback)
 
-    def test_unreachable_user_store(self):
+    def test_unreachable_couchdb(self):
         the_is_ok = False
         the_is_conflict = False
         the_models = []
