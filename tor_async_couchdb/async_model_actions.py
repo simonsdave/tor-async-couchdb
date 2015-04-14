@@ -14,11 +14,11 @@ import tamper
 
 _logger = logging.getLogger("async_actions.%s" % __name__)
 
-"""```user_store``` points to the User Store. By default it
+"""```database``` points to the User Store. By default it
 points to a local CouchDB database. It is expected that the
 service's mainline will update this configuration.
 """
-user_store = "http://127.0.0.1:5984/identity_service_user_store"
+database = "http://127.0.0.1:5984/database"
 
 """If not None, ```tampering_signer``` is the keyczar signer
 used to enforce tampering proofing of the User Store.
@@ -32,11 +32,10 @@ appropriate non-None values.
 username = None
 password = None
 
-"""Return the boolean value of the user_service / user_store_validate_cert
-configuration option. By default (ie of the setting doesn't appear
-in the configuration file) True will be returned. This config
-option proved very useful when the user service made requests to
-the user store's SSL end-point that was using self-signed certs.
+"""Certificate validation will be performned if ```validate_cert```
+is ```True``` and we're interacting with CouchDB over TLS/SSL (ie
+```database``` points to a URL starting with https).
+This config option is very useful when CouchDB self-signed certs.
 """
 validate_cert = True
 
@@ -82,7 +81,7 @@ class _AsyncUserStoreAction(AsyncAction):
         assert self._callback is None
         self._callback = callback
 
-        url = "%s/%s" % (user_store, self.path)
+        url = "%s/%s" % (database, self.path)
 
         headers = {
             "Accept": "application/json",
