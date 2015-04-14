@@ -10,28 +10,28 @@ created create a mainline for the installer like the example below:
 
     import logging
 
-    from identity_service.util.couchdb import installer
-    from identity_service.user_store import design_docs
-    from identity_service.user_store import seed_docs
+    from tor_async_couchdb import installer
+    import design_docs
+    import seed_docs
 
-    _logger = logging.getLogger("user_store.%s" % __name__)
+    _logger = logging.getLogger("fruit_store.%s" % __name__)
 
 
     class CommandLineParser(installer.CommandLineParser):
 
         def __init__(self):
             description = (
-                "The User Store Installer is a utility used to create "
+                "The Fruit Store Installer is a utility used to create "
                 "and/or delete the CouchDB database that implements "
-                "the User Store."
+                "the Fruit Store."
             )
             installer.CommandLineParser.__init__(
                 self,
                 description,
-                "identity_service_user_store")
+                "database")
 
     if __name__ == "__main__":
-        installer.main(CommandLineParser(), design_docs, seed_docs)
+        sys.exit(installer.main(CommandLineParser(), design_docs, seed_docs))
 
 And that's all there is too it! Pretty sweet right?:-)
 """
@@ -50,7 +50,7 @@ from keyczar import keyczar
 import clparserutil
 import tamper
 
-_logger = logging.getLogger("util.%s" % __name__)
+_logger = logging.getLogger(__name__)
 
 
 def _is_couchdb_accessible(host, auth, verify_host_ssl_cert):
