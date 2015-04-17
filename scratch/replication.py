@@ -313,8 +313,19 @@ def main():
     for rev_in_conflict in conflict.revs_in_conflict:
         assert delete_document(host, db2, rev_in_conflict)
     assert update_document(host, db2, conflict.current_rev, conflict.current_rev["ts"])
-    print get_document_by_doc_id(host, db2, doc_id)
 
     assert 0 == len(get_conflicts(host, db2))
+
+    #
+    # push resolved conflict from db2 to db1 via replication
+    # and then 2dbs sb in sync
+    #
+    assert trigger_replication(host, db2, db1)
+    assert_docs_equal(
+        get_document_by_doc_id(host, db1, doc_id),
+        get_document_by_doc_id(host, db2, doc_id))
+
+    assert 0 == len(get_conflicts(host, db1))
+
 
 main()
