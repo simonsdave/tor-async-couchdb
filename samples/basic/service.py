@@ -4,36 +4,14 @@
 
 import httplib
 import json
-import shutil
-import tempfile
 import random
 import uuid
 
-from keyczar import keyczar
-from keyczar import keyczart
-import requests
 import tornado.httpserver
-import tornado.netutil
 import tornado.web
 
 from tor_async_couchdb import async_model_actions
 from tor_async_couchdb.model import Model
-
-_database_url = r"http://127.0.0.1:5984/davewashere"
-
-# curl http://127.0.0.1:5984/davewashere/_design/boo_by_boo_id/_view/boo_by_boo_id?include_docs=true
-_design_doc_name = "boo_by_boo_id"
-_design_doc = (
-    '{'
-    '    "language": "javascript",'
-    '    "views": {'
-    '        "%VIEW_NAME%": {'
-    '            "map": "function(doc) { if (doc.type.match(/^boo_v1.0/i)) { emit(doc.boo_id) } }"'
-    '        }'
-    '    }'
-    '}'
-)
-_design_doc = _design_doc.replace("%VIEW_NAME%", _design_doc_name)
 
 
 class Boo(Model):
@@ -59,13 +37,7 @@ class Boo(Model):
 
     @classmethod
     def get_random_fruit(cls, but_not_this_fruit=None):
-        fruits = [
-            "apple",
-            "pear",
-            "fig",
-            "orange",
-            "kiwi",
-        ]
+        fruits = ["apple", "pear", "fig", "orange", "kiwi"]
         while True:
             fruit = random.choice(fruits)
             if but_not_this_fruit is None:
@@ -106,12 +78,6 @@ class AsyncBoosRetriever(async_model_actions.AsyncModelsRetriever):
 
 
 class RequestHandler(tornado.web.RequestHandler):
-    """The ```TamperingIntegrationTestCase``` integration tests make
-    async requests to this Tornado request handler which then calls
-    the async model I/O classes to operate on persistent instances of
-    Boo. Why is this request handler needed? The async model I/O
-    classes need to operate in the context of a Tornado I/O loop.
-    """
 
     post_url_spec = r"/boo/(.+)"
 
@@ -172,49 +138,9 @@ class RequestHandler(tornado.web.RequestHandler):
 
 
 if __name__ == "__main__":
-    """Setup the integration tests environment. Specifically:
-
-    -- create a temporary database including creating a design doc
-    which permits reading persistant instances of Boo
-    -- create a tampering signer
-    -- configure the async model I/O classes to use the newly
-    created tampering signer and temporary database
-
-    """
-    # in case a previous sample didn't clean itself up delete database
-    # totally ignoring the result
-    response = requests.delete(_database_url)
-    # create database
-    response = requests.put(_database_url)
-    assert response.status_code == httplib.CREATED
-
-    # install design doc
-    url = "%s/_design/%s" % (_database_url, _design_doc_name)
-    response = requests.put(
-        url,
-        data=_design_doc,
-        headers={"Content-Type": "application/json; charset=utf8"})
-    assert response.status_code == httplib.CREATED
-
-    # create a tampering signer and get async_model_actions using it
-    tampering_dir_name = tempfile.mkdtemp()
-
-    keyczart.Create(
-        tampering_dir_name,
-        "some purpose",
-        keyczart.keyinfo.SIGN_AND_VERIFY)
-    keyczart.AddKey(
-        tampering_dir_name,
-        keyczart.keyinfo.PRIMARY)
-    tampering_signer = keyczar.Signer.Read(tampering_dir_name)
-
-    shutil.rmtree(tampering_dir_name, ignore_errors=True)
 
     # get async_model_actions using our temp database
-    async_model_actions.database = _database_url
-
-    # get async_model_actions using our tampering signer
-    async_model_actions.tampering_signer = tampering_signer
+    async_model_actions.database = r"http://127.0.0.1:5984/tor_async_couchdb_basic_sample"
 
     handlers = [
         (
