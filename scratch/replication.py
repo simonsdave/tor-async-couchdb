@@ -5,7 +5,6 @@ import httplib
 import json
 import time
 import uuid
-import sys
 
 import requests
 
@@ -245,6 +244,7 @@ def main():
     doc_id = create_document(host, db1)
     assert doc_id
     doc = get_document_by_doc_id(host, db1, doc_id)
+    assert doc
 
     assert trigger_replication(host, db1, db2)
 
