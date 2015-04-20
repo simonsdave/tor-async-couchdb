@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-"""...
+"""This service implements a simple RESTful service that
+demonstrates how tor-async-couchdb was intended to be used.
 """
 
 import datetime
 import httplib
-import logging
 import json
+import logging
+import optparse
 import random
 import time
 import uuid
@@ -16,6 +18,8 @@ import tornado.web
 
 from tor_async_couchdb import async_model_actions
 from tor_async_couchdb.model import Model
+
+_logger = logging.getLogger(__name__)
 
 
 def _utc_now():
@@ -188,7 +192,43 @@ class IndividualsRequestHandler(RequestHandler):
         self.finish()
 
 
+class CommandLineParser(optparse.OptionParser):
+
+    def __init__(self):
+        description = (
+            "This service implements a simple RESTful service that "
+            "demonstrates how tor-async-couchdb was intended to be "
+            "used."
+        )
+        optparse.OptionParser.__init__(
+            self,
+            "usage: %prog [options]",
+            description=description)
+
+        default = 8445
+        help = "port - default = %s" % default
+        self.add_option(
+            "--port",
+            action="store",
+            dest="port",
+            default=default,
+            type="int",
+            help=help)
+
+        default = "127.0.0.1"
+        help = "ip - default = %s" % default
+        self.add_option(
+            "--ip",
+            action="store",
+            dest="ip",
+            default=default,
+            type="string",
+            help=help)
+
+
 if __name__ == "__main__":
+    clp = CommandLineParser()
+    (clo, cla) = clp.parse_args()
 
     #
     # configure logging
@@ -221,6 +261,11 @@ if __name__ == "__main__":
     app = tornado.web.Application(handlers=handlers, **settings)
 
     http_server = tornado.httpserver.HTTPServer(app, xheaders=True)
-    http_server.listen(port=2525, address="127.0.0.1")
+    http_server.listen(port=clo.port, address=clo.ip)
+
+    _logger.info(
+        "service started and listening on http://%s:%d",
+        clo.ip,
+        clo.port)
 
     tornado.ioloop.IOLoop.instance().start()
