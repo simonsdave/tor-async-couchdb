@@ -3,8 +3,10 @@
 """
 
 import httplib
+import logging
 import json
 import random
+import time
 import uuid
 
 import tornado.httpserver
@@ -14,26 +16,29 @@ from tor_async_couchdb import async_model_actions
 from tor_async_couchdb.model import Model
 
 
-class Boo(Model):
+class Fruit(Model):
 
     def __init__(self, **kwargs):
         Model.__init__(self, **kwargs)
 
         if "doc" in kwargs:
             doc = kwargs["doc"]
-            self.boo_id = doc["boo_id"]
+            self.fruit_id = doc["fruit_id"]
             self.fruit = doc["fruit"]
             return
 
-        self.boo_id = kwargs["boo_id"]
+        self.fruit_id = kwargs["fruit_id"]
         self.fruit = type(self).get_random_fruit()
 
     def as_dict_for_store(self):
         rv = Model.as_dict_for_store(self)
-        rv["type"] = "boo_v1.0"
-        rv["boo_id"] = self.boo_id
+        rv["type"] = "fruit_v1.0"
+        rv["fruit_id"] = self.fruit_id
         rv["fruit"] = self.fruit
         return rv
+
+    def choose_new_random_fruit(self):
+        self.fruit = type(self).get_random_fruit(self.fruit)
 
     @classmethod
     def get_random_fruit(cls, but_not_this_fruit=None):
@@ -46,106 +51,146 @@ class Boo(Model):
                 return fruit
 
 
-class AsyncBooPersister(async_model_actions.AsyncPersister):
+class AsyncFruitPersister(async_model_actions.AsyncPersister):
 
-    def __init__(self, boo, async_state=None):
-        async_model_actions.AsyncPersister.__init__(self, boo, [], async_state)
+    def __init__(self, fruit, async_state=None):
+        async_model_actions.AsyncPersister.__init__(self, fruit, [], async_state)
 
 
-class AsyncBooRetriever(async_model_actions.AsyncModelRetriever):
+class AsyncFruitRetriever(async_model_actions.AsyncModelRetriever):
 
-    def __init__(self, boo_id, async_state=None):
+    def __init__(self, fruit_id, async_state=None):
         async_model_actions.AsyncModelRetriever.__init__(
             self,
-            "boo_by_boo_id",
-            boo_id,
+            "fruit_by_fruit_id",
+            fruit_id,
             async_state)
 
     def create_model_from_doc(self, doc):
-        return Boo(doc=doc)
+        return Fruit(doc=doc)
 
 
-class AsyncBoosRetriever(async_model_actions.AsyncModelsRetriever):
+class AsyncFruitsRetriever(async_model_actions.AsyncModelsRetriever):
 
     def __init__(self, async_state=None):
         async_model_actions.AsyncModelsRetriever.__init__(
             self,
-            "boo_by_boo_id",
+            "fruit_by_fruit_id",
             async_state)
 
     def create_model_from_doc(self, doc):
-        return Boo(doc=doc)
+        return Fruit(doc=doc)
 
 
 class RequestHandler(tornado.web.RequestHandler):
 
-    post_url_spec = r"/boo/(.+)"
+    def fruit_as_dict(self, fruit):
+        return {
+            "_id": fruit._id,
+            "_rev": fruit._rev,
+            "fruit_id": fruit.fruit_id,
+            "fruit": fruit.fruit,
+        }
+
+
+class CollectionsRequestHandler(RequestHandler):
+
+    url_spec = r"/v1.0/fruits"
 
     @tornado.web.asynchronous
-    def post(self, command):
+    def post(self):
+        def on_persist_done(is_ok, is_conflict, ap):
+            self.write(json.dumps(self.fruit_as_dict(ap.model)))
+            self.set_status(httplib.CREATED)
+            self.finish()
 
-        if command == "create":
-            def on_persist_done(is_ok, is_conflict, ap):
-                self.write(json.dumps(self._boo_as_dict(ap.model)))
-                self.set_status(httplib.CREATED)
+        fruit = Fruit(fruit_id=uuid.uuid4().hex)
+        ap = AsyncFruitPersister(fruit)
+        ap.persist(on_persist_done)
+
+    @tornado.web.asynchronous
+    def get(self):
+        def on_fetch_done(is_ok, fruits, absr):
+            if not is_ok:
+                self.set_status(httplib.INTERNAL_SERVER_ERROR)
                 self.finish()
+                return
 
-            boo = Boo(boo_id=uuid.uuid4().hex)
-            ap = AsyncBooPersister(boo)
-            ap.persist(on_persist_done)
+            dicts = [self.fruit_as_dict(fruit) for fruit in fruits]
+            self.write(json.dumps(dicts))
+            self.set_status(httplib.OK)
+            self.finish()
+
+        absr = AsyncFruitsRetriever()
+        absr.fetch(on_fetch_done)
+
+
+class IndividualsRequestHandler(RequestHandler):
+
+    url_spec = r"/v1.0/fruits/([^/]+)"
+
+    @tornado.web.asynchronous
+    def get(self, fruit_id):
+        def on_fetch_done(is_ok, fruit, abr):
+            if fruit is None:
+                self.set_status(httplib.NOT_FOUND)
+                self.finish()
+                return
+
+            self.write(json.dumps(self.fruit_as_dict(fruit)))
+            self.set_status(httplib.OK)
+            self.finish()
+
+        abr = AsyncFruitRetriever(fruit_id)
+        abr.fetch(on_fetch_done)
+
+    @tornado.web.asynchronous
+    def put(self, fruit_id):
+        abr = AsyncFruitRetriever(fruit_id)
+        abr.fetch(self._put_on_fetch_done)
+
+    def _put_on_fetch_done(self, is_ok, fruit, abr):
+        if fruit is None:
+            self.set_status(httplib.NOT_FOUND)
+            self.finish()
             return
 
-        if command == "get":
-            def on_fetch_done(is_ok, boo, abr):
-                if boo is None:
-                    self.set_status(httplib.NOT_FOUND)
-                    self.finish()
-                    return
+        fruit.choose_new_random_fruit()
 
-                self.write(json.dumps(self._boo_as_dict(boo)))
-                self.set_status(httplib.OK)
-                self.finish()
+        afp = AsyncFruitPersister(fruit)
+        afp.persist(self._put_on_async_persist_done)
 
-            json_request_body = json.loads(self.request.body)
-            boo_id = json_request_body.get("boo_id", None)
-            assert boo_id is not None
-            abr = AsyncBooRetriever(boo_id)
-            abr.fetch(on_fetch_done)
+    def _put_on_async_persist_done(self, is_ok, is_conflict, afp):
+        if not is_ok:
+            self.set_status(httplib.INTERNAL_SERVER_ERROR)
+            self.finish()
             return
 
-        if command == "get_all":
-            def on_fetch_done(is_ok, boos, absr):
-                assert boos is not None
-                dicts = [self._boo_as_dict(boo) for boo in boos]
-                self.write(json.dumps(dicts))
-                self.set_status(httplib.OK)
-                self.finish()
-
-            absr = AsyncBoosRetriever()
-            absr.fetch(on_fetch_done)
-            return
-
-        self.set_status(httplib.NOT_FOUND)
+        self.write(json.dumps(self.fruit_as_dict(afp.model)))
+        self.set_status(httplib.OK)
         self.finish()
-
-    def _boo_as_dict(self, boo):
-        return {
-            "_id": boo._id,
-            "_rev": boo._rev,
-            "boo_id": boo.boo_id,
-            "fruit": boo.fruit,
-        }
 
 
 if __name__ == "__main__":
 
+    # configure logging
+    logging.Formatter.converter = time.gmtime # remember gmt = utc
+    logging.basicConfig(
+        level=logging.INFO,
+        datefmt="%Y-%m-%dT%H:%M:%S",
+        format="%(asctime)s.%(msecs)03d+00:00 %(levelname)s %(module)s %(message)s")
+
     # get async_model_actions using our temp database
-    async_model_actions.database = r"http://127.0.0.1:5984/tor_async_couchdb_basic_sample"
+    async_model_actions.database = r"http://127.0.0.1:5984/tor_async_couchdb_sample_basic"
 
     handlers = [
         (
-            RequestHandler.post_url_spec,
-            RequestHandler
+            CollectionsRequestHandler.url_spec,
+            CollectionsRequestHandler
+        ),
+        (
+            IndividualsRequestHandler.url_spec,
+            IndividualsRequestHandler
         ),
     ]
 
