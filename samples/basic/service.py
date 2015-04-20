@@ -173,14 +173,18 @@ class IndividualsRequestHandler(RequestHandler):
 
 if __name__ == "__main__":
 
+    #
     # configure logging
-    logging.Formatter.converter = time.gmtime # remember gmt = utc
+    #
+    logging.Formatter.converter = time.gmtime   # remember gmt = utc
     logging.basicConfig(
         level=logging.INFO,
         datefmt="%Y-%m-%dT%H:%M:%S",
         format="%(asctime)s.%(msecs)03d+00:00 %(levelname)s %(module)s %(message)s")
 
-    # get async_model_actions using our temp database
+    #
+    # configure async_model_actions to point to our database
+    #
     async_model_actions.database = r"http://127.0.0.1:5984/tor_async_couchdb_sample_basic"
 
     handlers = [
