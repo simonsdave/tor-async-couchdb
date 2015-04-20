@@ -2,6 +2,7 @@
 """...
 """
 
+import datetime
 import httplib
 import logging
 import json
@@ -9,11 +10,18 @@ import random
 import time
 import uuid
 
+import dateutil.parser
 import tornado.httpserver
 import tornado.web
 
 from tor_async_couchdb import async_model_actions
 from tor_async_couchdb.model import Model
+
+
+def _utc_now():
+    now = datetime.datetime.utcnow()
+    now = now.replace(tzinfo=dateutil.tz.tzutc())
+    return now
 
 
 class Fruit(Model):
@@ -25,19 +33,26 @@ class Fruit(Model):
             doc = kwargs["doc"]
             self.fruit_id = doc["fruit_id"]
             self.fruit = doc["fruit"]
+            self.created_on = dateutil.parser.parse(doc["created_on"])
+            self.updated_on = dateutil.parser.parse(doc["updated_on"])
             return
 
         self.fruit_id = kwargs["fruit_id"]
         self.fruit = type(self).get_random_fruit()
+        utc_now = _utc_now()
+        self.created_on = utc_now
+        self.updated_on = utc_now
 
     def as_dict_for_store(self):
         rv = Model.as_dict_for_store(self)
         rv["type"] = "fruit_v1.0"
         rv["fruit_id"] = self.fruit_id
         rv["fruit"] = self.fruit
+        rv["created_on"] = self.created_on.isoformat()
+        rv["updated_on"] = self.updated_on.isoformat()
         return rv
 
-    def choose_new_random_fruit(self):
+    def change_fruit(self):
         self.fruit = type(self).get_random_fruit(self.fruit)
 
     @classmethod
@@ -90,6 +105,8 @@ class RequestHandler(tornado.web.RequestHandler):
             "_rev": fruit._rev,
             "fruit_id": fruit.fruit_id,
             "fruit": fruit.fruit,
+            "created_on": fruit.created_on.isoformat(),
+            "updated_on": fruit.updated_on.isoformat(),
         }
 
 
@@ -155,7 +172,7 @@ class IndividualsRequestHandler(RequestHandler):
             self.finish()
             return
 
-        fruit.choose_new_random_fruit()
+        fruit.change_fruit()
 
         afp = AsyncFruitPersister(fruit)
         afp.persist(self._put_on_async_persist_done)
