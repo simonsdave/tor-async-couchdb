@@ -1,5 +1,5 @@
 """This module contains a collection of classes that implement
-async actions against the User Store (implemented using CouchDB).
+Tornado async actions against CouchDB.
 """
 
 import httplib
@@ -14,18 +14,18 @@ import tamper
 
 _logger = logging.getLogger("async_actions.%s" % __name__)
 
-"""```database``` points to the User Store. By default it
+"""```database``` points to a CouchDB database. By default it
 points to a local CouchDB database. It is expected that the
 service's mainline will update this configuration.
 """
 database = "http://127.0.0.1:5984/database"
 
 """If not None, ```tampering_signer``` is the keyczar signer
-used to enforce tampering proofing of the User Store.
+used to enforce tampering proofing of the CouchDB database.
 """
 tampering_signer = None
 
-"""If the User Store requires basic authentication in order
+"""If CouchDB requires basic authentication in order
 to access it then set ```username``` and ```password``` to
 appropriate non-None values.
 """
@@ -49,8 +49,8 @@ class AsyncAction(object):
         self.async_state = async_state
 
 
-class _AsyncUserStoreAction(AsyncAction):
-    """```_AsyncUserStoreAction``` used to be an abstract base
+class _AsyncCouchDBAction(AsyncAction):
+    """```_AsyncCouchDBAction``` used to be an abstract base
     class for all async interactions with the user store. However
     when it came time to unit tests derived classes it was really
     obvious that it was better to use composition rather than
@@ -119,7 +119,7 @@ class _AsyncUserStoreAction(AsyncAction):
         # by performance analysis tools
         #
         fmt = (
-            "User Store took %d ms to respond with %d to '%s' "
+            "CouchDB took %d ms to respond with %d to '%s' "
             "against >>>%s<<<"
         )
         _logger.info(
@@ -138,7 +138,7 @@ class _AsyncUserStoreAction(AsyncAction):
                 return
 
             fmt = (
-                "User Store responded to %s on %s "
+                "CouchDB responded to %s on %s "
                 "with HTTP response %d but expected %d"
             )
             _logger.error(
@@ -152,7 +152,7 @@ class _AsyncUserStoreAction(AsyncAction):
 
         if response.error:
             _logger.error(
-                "User Store responded to %s on %s with error '%s'",
+                "CouchDB responded to %s on %s with error '%s'",
                 response.request.method,
                 response.effective_url,
                 response.error)
@@ -198,7 +198,7 @@ class _AsyncUserStoreAction(AsyncAction):
 
 
 class AsyncModelRetriever(AsyncAction):
-    """Async'ly retrieve a model from the User Store."""
+    """Async'ly retrieve a model from the CouchDB database."""
 
     def __init__(self, design_doc, key, async_state):
         AsyncAction.__init__(self, async_state)
@@ -228,16 +228,16 @@ class AsyncModelRetriever(AsyncAction):
         # ie one view per design doc
         path = path_fmt % (self.design_doc, self.design_doc, query_string)
 
-        ausa = _AsyncUserStoreAction(
+        acdba = _AsyncCouchDBAction(
             path,
             "GET",
             None,           # body
             httplib.OK,
             self.create_model_from_doc)
 
-        ausa.fetch(self._on_ausa_fetch_done)
+        acdba.fetch(self._on_acdba_fetch_done)
 
-    def _on_ausa_fetch_done(self, is_ok, is_conflict, models, _id, _rev, ausa):
+    def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
         assert is_conflict is False
         model = models[0] if models else None
         self._call_callback(is_ok, model)
@@ -250,7 +250,7 @@ class AsyncModelRetriever(AsyncAction):
     def get_query_string_key_value_pairs(self):
         """This method is only called by ```fetch()``` to get the key value
         pairs that will be used to construct the query string in the request
-        to the User Store.
+        to CouchDB.
 
         The presence of this method is a bit of a hack that was introduced
         when support for "most recent document" type queries was required.
@@ -271,7 +271,7 @@ class AsyncModelRetriever(AsyncAction):
 
 
 class AsyncModelsRetriever(AsyncAction):
-    """Async'ly retrieve a collection of models from the User Store."""
+    """Async'ly retrieve a collection of models from CouchDB."""
 
     def __init__(self,
                  design_doc,
@@ -289,14 +289,14 @@ class AsyncModelsRetriever(AsyncAction):
         # :TRICKY: assumption here that design docs and views
         # are called the same thing ie one view per design doc
         path_fmt = '_design/%s/_view/%s?include_docs=true'
-        ausa = _AsyncUserStoreAction(
+        acdba = _AsyncCouchDBAction(
             path_fmt % (self.design_doc, self.design_doc),
             "GET",
             None,           # body
             httplib.OK,
             self.create_model_from_doc)
 
-        ausa.fetch(self._on_ausa_fetch_done)
+        acdba.fetch(self._on_acdba_fetch_done)
 
     def create_model_from_doc(self, doc):
         raise NotImplementedError()
@@ -319,7 +319,7 @@ class AsyncModelsRetriever(AsyncAction):
         """
         return models
 
-    def _on_ausa_fetch_done(self, is_ok, is_conflict, models, _id, _rev, ausa):
+    def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
         assert is_conflict is False
         self._call_callback(is_ok, models)
 
@@ -332,42 +332,42 @@ class AsyncModelsRetriever(AsyncAction):
 class AsyncPersister(AsyncAction):
     """Async'ly persist a model object."""
 
-    def __init__(self, model, model_as_dict_for_store_args, async_state):
+    def __init__(self, model, model_as_doc_for_store_args, async_state):
         AsyncAction.__init__(self, async_state)
 
         self.model = model
-        self.model_as_dict_for_store_args = model_as_dict_for_store_args
+        self.model_as_doc_for_store_args = model_as_doc_for_store_args
 
-        # self._ausa is here only because it makes unit testing easier
+        # self._acdba is here only because it makes unit testing easier
         self._callback = None
 
     def persist(self, callback):
         assert not self._callback
         self._callback = callback
 
-        model_as_dict_for_store = self.model.as_dict_for_store(*self.model_as_dict_for_store_args)
-        if "_id" in model_as_dict_for_store:
-            path = model_as_dict_for_store["_id"]
+        model_as_doc_for_store = self.model.as_doc_for_store(*self.model_as_doc_for_store_args)
+        if "_id" in model_as_doc_for_store:
+            path = model_as_doc_for_store["_id"]
             method = "PUT"
         else:
             path = ""
             method = "POST"
 
-        ausa = _AsyncUserStoreAction(
+        acdba = _AsyncCouchDBAction(
             path,
             method,
-            model_as_dict_for_store,
+            model_as_doc_for_store,
             httplib.CREATED,
             None)           # create_model_from_doc
-        ausa.fetch(self._on_ausa_fetch_done)
+        acdba.fetch(self._on_acdba_fetch_done)
 
-    def _on_ausa_fetch_done(self, is_ok, is_conflict, models, _id, _rev, ausa):
-        """```self.model``` has just been written to the User Store which
+    def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
+        """```self.model``` has just been written to a CouchDB database which
         means ```self.model```'s _id and _rev properties might be out of
-        sync with the _id and _rev properties in the User Store since the
-        User Store will generate these values. The "if _id" and "if _rev"
-        sections of code below unite the in-memory view and the in User
-        Store view of this object/document.
+        sync with the _id and _rev properties in CouchDB since CouchDB
+        generates these values. The "if _id" and "if _rev"
+        sections of code below unite the in-memory view and the CouchDB
+        view of this object/document.
         """
         if _id is not None:
             self.model._id = _id
@@ -384,8 +384,8 @@ class AsyncPersister(AsyncAction):
         self._callback = None
 
 
-class AsyncUserStoreHealthCheck(AsyncAction):
-    """Async'ly confirm the User Service can reach the User Store."""
+class AsyncCouchDBHealthCheck(AsyncAction):
+    """Async'ly confirm CouchDB can be reached."""
 
     def __init__(self, async_state=None):
         AsyncAction.__init__(self, async_state)
@@ -396,15 +396,15 @@ class AsyncUserStoreHealthCheck(AsyncAction):
         assert not self._callback
         self._callback = callback
 
-        ausa = _AsyncUserStoreAction(
+        acdba = _AsyncCouchDBAction(
             "",             # path
             "GET",
             None,           # body
             httplib.OK,
             None)           # create_model_from_doc
-        ausa.fetch(self._on_ausa_fetch_done)
+        acdba.fetch(self._on_acdba_fetch_done)
 
-    def _on_ausa_fetch_done(self, is_ok, is_conflict, models, _id, _rev, ausa):
+    def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
         assert is_conflict is False
         self._call_callback(is_ok)
 

@@ -53,8 +53,8 @@ class Boo(Model):
         self.boo_id = kwargs["boo_id"]
         self.fruit = type(self).get_random_fruit()
 
-    def as_dict_for_store(self):
-        rv = Model.as_dict_for_store(self)
+    def as_doc_for_store(self):
+        rv = Model.as_doc_for_store(self)
         rv["type"] = "boo_v1.0"
         rv["boo_id"] = self.boo_id
         rv["fruit"] = self.fruit
