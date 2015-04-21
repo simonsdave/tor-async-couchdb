@@ -223,13 +223,13 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
 
     def test_ctr(self):
         model = mock.Mock()
-        model_as_dict_for_store_args = mock.Mock()
+        model_as_doc_for_store_args = mock.Mock()
         async_state = mock.Mock()
 
-        ap = AsyncPersister(model, model_as_dict_for_store_args, async_state)
+        ap = AsyncPersister(model, model_as_doc_for_store_args, async_state)
 
         self.assertTrue(ap.model is model)
-        self.assertTrue(ap.model_as_dict_for_store_args is model_as_dict_for_store_args)
+        self.assertTrue(ap.model_as_doc_for_store_args is model_as_doc_for_store_args)
         self.assertTrue(ap.async_state is async_state)
 
     def test_create_new(self):

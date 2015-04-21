@@ -332,11 +332,11 @@ class AsyncModelsRetriever(AsyncAction):
 class AsyncPersister(AsyncAction):
     """Async'ly persist a model object."""
 
-    def __init__(self, model, model_as_dict_for_store_args, async_state):
+    def __init__(self, model, model_as_doc_for_store_args, async_state):
         AsyncAction.__init__(self, async_state)
 
         self.model = model
-        self.model_as_dict_for_store_args = model_as_dict_for_store_args
+        self.model_as_doc_for_store_args = model_as_doc_for_store_args
 
         # self._acdba is here only because it makes unit testing easier
         self._callback = None
@@ -345,9 +345,9 @@ class AsyncPersister(AsyncAction):
         assert not self._callback
         self._callback = callback
 
-        model_as_dict_for_store = self.model.as_dict_for_store(*self.model_as_dict_for_store_args)
-        if "_id" in model_as_dict_for_store:
-            path = model_as_dict_for_store["_id"]
+        model_as_doc_for_store = self.model.as_doc_for_store(*self.model_as_doc_for_store_args)
+        if "_id" in model_as_doc_for_store:
+            path = model_as_doc_for_store["_id"]
             method = "PUT"
         else:
             path = ""
@@ -356,7 +356,7 @@ class AsyncPersister(AsyncAction):
         acdba = _AsyncCouchDBAction(
             path,
             method,
-            model_as_dict_for_store,
+            model_as_doc_for_store,
             httplib.CREATED,
             None)           # create_model_from_doc
         acdba.fetch(self._on_acdba_fetch_done)

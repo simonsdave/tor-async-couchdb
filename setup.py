@@ -16,7 +16,7 @@ setup(
     install_requires=[
         "python-keyczar==0.715",
     ],
-    version="0.9.1",
+    version="0.9.2",
     description="Tornado Async Client for CouchDB",
     author="Dave Simons",
     author_email="simonsdave@gmail.com",
