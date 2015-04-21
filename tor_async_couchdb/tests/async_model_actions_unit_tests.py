@@ -8,12 +8,12 @@ import uuid
 from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
-from ..async_model_actions import AsyncUserStoreHealthCheck
+from ..async_model_actions import AsyncCouchDBHealthCheck
 from ..model import Model
 from .. import async_model_actions  # noqa, needed for patching using relative path
 
 
-class AsyncUserStoreActionPatcher(object):
+class AsyncCouchDBActionPatcher(object):
 
     def __init__(self, is_ok, is_conflict, models, _id, _rev):
 
@@ -21,7 +21,7 @@ class AsyncUserStoreActionPatcher(object):
             callback(is_ok, is_conflict, models, _id, _rev, ausa)
 
         self._patcher = mock.patch(
-            __name__ + ".async_model_actions._AsyncUserStoreAction.fetch",
+            __name__ + ".async_model_actions._AsyncCouchDBAction.fetch",
             fetch_patch)
 
     def __enter__(self):
@@ -55,7 +55,7 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
         the_models = None
         the_id = None
         the_rev = None
-        with AsyncUserStoreActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             design_doc = uuid.uuid4().hex
             key = uuid.uuid4().hex
             async_state = uuid.uuid4().hex
@@ -78,7 +78,7 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
         the_models = []
         the_id = None
         the_rev = None
-        with AsyncUserStoreActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             design_doc = uuid.uuid4().hex
             key = uuid.uuid4().hex
             async_state = uuid.uuid4().hex
@@ -101,7 +101,7 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
         the_models = [Model()]
         the_id = None
         the_rev = None
-        with AsyncUserStoreActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             design_doc = uuid.uuid4().hex
             key = uuid.uuid4().hex
             async_state = uuid.uuid4().hex
@@ -160,7 +160,7 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
         the_models = None
         the_id = None
         the_rev = None
-        with AsyncUserStoreActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             design_doc = uuid.uuid4().hex
             async_state = uuid.uuid4().hex
 
@@ -181,7 +181,7 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
         the_models = [Model()]
         the_id = None
         the_rev = None
-        with AsyncUserStoreActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             design_doc = uuid.uuid4().hex
             async_state = uuid.uuid4().hex
 
@@ -233,9 +233,7 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
         self.assertTrue(ap.async_state is async_state)
 
     def test_create_new(self):
-        """Verify AsyncPersister.persist() when creating a new document
-        in the User Store.
-        """
+        """Verify AsyncPersister.persist() when creating a new document."""
 
         the_model = Model()
         the_model_as_dict_args = []
@@ -258,12 +256,12 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
             self.assertFalse(is_conflict)
             self.assertTrue(ap is the_ap)
 
-        with AsyncUserStoreActionPatcher(True, False, [], the_id, the_rev):
+        with AsyncCouchDBActionPatcher(True, False, [], the_id, the_rev):
             the_ap.persist(callback)
 
     def test_update_existing(self):
         """Verify AsyncPersister.persist() when updating a document
-        that already exists in the User Store.
+        that already exists.
         """
 
         the_model = Model(doc={"_id": uuid.uuid4().hex, "_rev": uuid.uuid4().hex})
@@ -281,22 +279,22 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
             self.assertFalse(is_conflict)
             self.assertTrue(ap, the_ap)
 
-        with AsyncUserStoreActionPatcher(True, False, [], the_model._id, the_next_rev):
+        with AsyncCouchDBActionPatcher(True, False, [], the_model._id, the_next_rev):
             the_ap.persist(callback)
 
 
-class AsyncUserStoreHealthCheckCheckUnitTaseCase(unittest.TestCase):
-    """A collection of unit tests for the AsyncUserStoreHealthCheck class."""
+class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
+    """A collection of unit tests for the AsyncCouchDBHealthCheck class."""
 
     def test_ctr_with_async_state(self):
         async_state = uuid.uuid4().hex
 
-        aushc = AsyncUserStoreHealthCheck(async_state)
+        aushc = AsyncCouchDBHealthCheck(async_state)
 
         self.assertTrue(aushc.async_state is async_state)
 
     def test_ctr_without_async_state(self):
-        aushc = AsyncUserStoreHealthCheck()
+        aushc = AsyncCouchDBHealthCheck()
 
         self.assertIsNone(aushc.async_state)
 
@@ -306,8 +304,8 @@ class AsyncUserStoreHealthCheckCheckUnitTaseCase(unittest.TestCase):
         the_models = []
         the_id = None
         the_rev = None
-        with AsyncUserStoreActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
-            the_aushc = AsyncUserStoreHealthCheck()
+        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+            the_aushc = AsyncCouchDBHealthCheck()
 
             def callback(is_ok, aushc):
                 self.assertTrue(is_ok)
@@ -321,8 +319,8 @@ class AsyncUserStoreHealthCheckCheckUnitTaseCase(unittest.TestCase):
         the_models = []
         the_id = None
         the_rev = None
-        with AsyncUserStoreActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
-            the_aushc = AsyncUserStoreHealthCheck()
+        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+            the_aushc = AsyncCouchDBHealthCheck()
 
             def callback(is_ok, aushc):
                 self.assertFalse(is_ok)
