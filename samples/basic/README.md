@@ -58,22 +58,22 @@ Service startup
 #Exercising the Service's API
 Create
 ```bash
->curl -s -X POST http://127.0.0.1:2525/v1.0/fruits | python -m json.tool
+>curl -s -X POST http://127.0.0.1:8445/v1.0/fruits | python -m json.tool
 ```
 
 Get individual
 ```bash
->curl -s http://127.0.0.1:2525/v1.0/fruits/996e11bfd4224feabe32e157e74c7343 | python -m json.tool
+>curl -s http://127.0.0.1:8445/v1.0/fruits/996e11bfd4224feabe32e157e74c7343 | python -m json.tool
 ```
 
 Get all
 ```bash
->curl -s http://127.0.0.1:2525/v1.0/fruits | python -m json.tool
+>curl -s http://127.0.0.1:8445/v1.0/fruits | python -m json.tool
 ```
 
 Update
 ```bash
-curl -s -X PUT http://127.0.0.1:2525/v1.0/fruits/996e11bfd4224feabe32e157e74c7343 | python -m json.tool
+curl -s -X PUT http://127.0.0.1:8445/v1.0/fruits/996e11bfd4224feabe32e157e74c7343 | python -m json.tool
 ```
 
 # Service's Data Model

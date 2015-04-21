@@ -47,8 +47,8 @@ class Fruit(Model):
         self.created_on = utc_now
         self.updated_on = utc_now
 
-    def as_dict_for_store(self):
-        rv = Model.as_dict_for_store(self)
+    def as_doc_for_store(self):
+        rv = Model.as_doc_for_store(self)
         rv["type"] = "fruit_v1.0"
         rv["fruit_id"] = self.fruit_id
         rv["fruit"] = self.fruit
