@@ -390,7 +390,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
         if not is_ok:
             sys.exit(1)
 
-    if clo.create_design_docs and design_docs_module is not None:
+    if clo.create and clo.create_design_docs and design_docs_module is not None:
         is_ok = _create_design_docs(
             clo.database,
             clo.host,
@@ -400,7 +400,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
         if not is_ok:
             sys.exit(1)
 
-    if clo.create_seed_docs and seeds_docs_module is not None:
+    if clo.create and clo.create_seed_docs and seeds_docs_module is not None:
         is_ok = _create_seed_docs(
             clo.database,
             clo.host,
