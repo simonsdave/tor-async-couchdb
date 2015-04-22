@@ -53,23 +53,23 @@ import tamper
 _logger = logging.getLogger(__name__)
 
 
-def _is_couchdb_accessible(host, auth, verify_host_ssl_cert):
+def _is_couchdb_accessible(host, session, verify_host_ssl_cert):
     """Returns True if there's a CouchDB server running on ```host```.
     Otherwise returns False.
     """
     try:
-        response = requests.get(host, auth=auth, verify=verify_host_ssl_cert)
+        response = session.get(host, verify=verify_host_ssl_cert)
     except Exception:
         return False
 
     return response.status_code == httplib.OK
 
 
-def _create_database(database, host, auth, verify_host_ssl_cert):
+def _create_database(database, host, session, verify_host_ssl_cert):
     _logger.info("Creating database '%s' on '%s'", database, host)
 
     url = "%s/%s" % (host, database)
-    response = requests.put(url, "PUT", auth=auth, verify=verify_host_ssl_cert)
+    response = session.put(url, verify=verify_host_ssl_cert)
     if response.status_code != httplib.CREATED:
         _logger.error("Failed to create database '%s' on '%s'", database, host)
         return False
@@ -80,7 +80,7 @@ def _create_database(database, host, auth, verify_host_ssl_cert):
 
 def _create_design_docs(database,
                         host,
-                        auth,
+                        session,
                         verify_host_ssl_cert,
                         design_docs_module):
     #
@@ -114,9 +114,8 @@ def _create_design_docs(database,
             design_doc = design_doc_file.read()
 
         url = "%s/%s/_design/%s" % (host, database, design_doc_name)
-        response = requests.put(
+        response = session.put(
             url,
-            auth=auth,
             data=design_doc,
             headers={"Content-Type": "application/json; charset=utf8"},
             verify=verify_host_ssl_cert)
@@ -130,7 +129,7 @@ def _create_design_docs(database,
 
 def _create_seed_docs(database,
                       host,
-                      auth,
+                      session,
                       verify_host_ssl_cert,
                       seed_docs_module,
                       seed_doc_signer_dir_name):
@@ -185,9 +184,8 @@ def _create_seed_docs(database,
             seed_doc = json.dumps(seed_doc)
 
         url = "%s/%s" % (host, database)
-        response = requests.post(
+        response = session.post(
             url,
-            auth=auth,
             data=seed_doc,
             headers={"Content-Type": "application/json; charset=utf8"},
             verify=verify_host_ssl_cert)
@@ -202,21 +200,21 @@ def _create_seed_docs(database,
     return True
 
 
-def _delete_database(database, host, auth, verify_host_ssl_cert):
+def _delete_database(database, host, session, verify_host_ssl_cert):
     _logger.info("Deleting database '%s' on '%s'", database, host)
 
     url = "%s/%s" % (host, database)
-    response = requests.get(url, auth=auth, verify=verify_host_ssl_cert)
+    response = session.get(url, verify=verify_host_ssl_cert)
     if response.status_code == httplib.NOT_FOUND:
         fmt = (
             "No need to delete database '%s' on '%s' "
             "since database doesn't exist"
         )
-        _logger.error(fmt, database, host)
+        _logger.info(fmt, database, host)
         return True
 
     url = "%s/%s" % (host, database)
-    response = requests.delete(url, auth=auth, verify=verify_host_ssl_cert)
+    response = session.delete(url, verify=verify_host_ssl_cert)
     if response.status_code != httplib.OK:
         _logger.error("Failed to delete database '%s' on '%s'", database, host)
         return False
@@ -342,12 +340,6 @@ class CommandLineParser(optparse.OptionParser):
             help=help)
 
 
-class RequestsAuthNoOp(requests.auth.AuthBase):
-
-    def __call__(self, r):
-        return r
-
-
 def main(clp, design_docs_module=None, seeds_docs_module=None):
     """```main``` is used to implement the core main line logic
     for a CouchDB installer. See this module's complete example
@@ -357,16 +349,14 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
 
     logging.basicConfig(level=clo.logging_level)
 
+    session = requests.Session()
+
     if clo.creds:
-        auth = requests.auth.HTTPBasicAuth(
-            clo.creds.user,
-            clo.creds.password)
-    else:
-        auth = RequestsAuthNoOp()
+        session.auth = (clo.creds.user, clo.creds.password)
 
     is_ok = _is_couchdb_accessible(
         clo.host,
-        auth,
+        session,
         clo.verify_host_ssl_cert)
     if not is_ok:
         _logger.fatal("CouchDB isn't running on '%s'", clo.host)
@@ -376,7 +366,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
         is_ok = _delete_database(
             clo.database,
             clo.host,
-            auth,
+            session,
             clo.verify_host_ssl_cert)
         if not is_ok:
             sys.exit(1)
@@ -385,7 +375,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
         is_ok = _create_database(
             clo.database,
             clo.host,
-            auth,
+            session,
             clo.verify_host_ssl_cert)
         if not is_ok:
             sys.exit(1)
@@ -394,7 +384,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
         is_ok = _create_design_docs(
             clo.database,
             clo.host,
-            auth,
+            session,
             clo.verify_host_ssl_cert,
             design_docs_module)
         if not is_ok:
@@ -404,7 +394,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
         is_ok = _create_seed_docs(
             clo.database,
             clo.host,
-            auth,
+            session,
             clo.verify_host_ssl_cert,
             seeds_docs_module,
             clo.seed_doc_signer_dir_name)
