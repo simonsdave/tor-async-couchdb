@@ -28,18 +28,18 @@ class ModelTaseCase(unittest.TestCase):
         self.assertEqual(model._id, doc["_id"])
         self.assertEqual(model._rev, doc["_rev"])
 
-    def test_as_dict_for_store_not_initalized(self):
+    def test_as_doc_for_store_not_initalized(self):
         doc = {}
         model = Model(doc=doc)
-        doc_from_as_dict_for_store = model.as_dict_for_store()
-        self.assertEqual(0, len(doc_from_as_dict_for_store))
+        doc_from_as_doc_for_store = model.as_doc_for_store()
+        self.assertEqual(0, len(doc_from_as_doc_for_store))
 
-    def test_as_dict_for_store_initalized(self):
+    def test_as_doc_for_store_initalized(self):
         doc = {
             "_id": uuid.uuid4().hex,
             "_rev": uuid.uuid4().hex,
         }
         model = Model(doc=doc)
-        doc_from_as_dict_for_store = model.as_dict_for_store()
-        self.assertEqual(doc["_id"], doc_from_as_dict_for_store["_id"])
-        self.assertEqual(doc["_rev"], doc_from_as_dict_for_store["_rev"])
+        doc_from_as_doc_for_store = model.as_doc_for_store()
+        self.assertEqual(doc["_id"], doc_from_as_doc_for_store["_id"])
+        self.assertEqual(doc["_rev"], doc_from_as_doc_for_store["_rev"])

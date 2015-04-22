@@ -1,5 +1,5 @@
 #
-# to build the distrubution @ tor_async_couchdb-0.9.0.tar.gz
+# to build the distrubution @ tor_async_couchdb-*.*.*.tar.gz
 #
 #   >git clone https://github.com/simonsdave/tor-async-couchdb.git
 #   >cd tor-async-couchdb
@@ -16,7 +16,7 @@ setup(
     install_requires=[
         "python-keyczar==0.715",
     ],
-    version="0.9.0",
+    version="0.9.2",
     description="Tornado Async Client for CouchDB",
     author="Dave Simons",
     author_email="simonsdave@gmail.com",

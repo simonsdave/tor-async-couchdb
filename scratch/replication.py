@@ -112,6 +112,14 @@ class Conflict(object):
         self.current_rev = current_rev
         self.revs_in_conflict = revs_in_conflict
 
+    def as_big_str(self):
+        rv = ""
+        rv += "Current Rev %s/%s\n" % (self.current_rev["_id"], self.current_rev["_rev"])
+        rv += "Conflicting Revs (%d)\n" % len(self.revs_in_conflict)
+        for rev_in_conflict in self.revs_in_conflict:
+            rv += "-- %s/%s\n" % (rev_in_conflict["_id"], rev_in_conflict["_rev"])
+        return rv[:-1]
+
 
 def get_conflicts(host, db):
     url = "%s/%s/_design/conflicts/_view/conflicts" % (host, db)
@@ -300,19 +308,30 @@ def main():
     conflicts = get_conflicts(host, db2)
     assert 1 == len(conflicts)
     conflict = conflicts[0]
-    print "Current Rev %s/%s" % (conflict.current_rev["_id"], conflict.current_rev["_rev"])
-    print "Conflicting Revs (%d)" % len(conflict.revs_in_conflict)
-    for rev_in_conflict in conflict.revs_in_conflict:
-        print "-- %s/%s" % (rev_in_conflict["_id"], rev_in_conflict["_rev"])
+    print conflict.as_big_str()
 
     #
     # eliminate the conflict by
-    # 1/ create a new rev of the document assuming the current rev is the "right" one
-    # 2/ delete the revs that were in conflict
     #
+    #   1/ creating a new rev of the document assuming the current
+    #      rev is the "right" one
+    #   2/ delete the revs that were in conflict
+    #
+    # note the sequence of the above is create rev we want to be the
+    # current then delete conflicting revs. consider what happens if
+    # the service fails just between update_document() and one of
+    # the delete_document() calls remembering that the new current
+    # rev could be based on all the data from all the revs being
+    # deleted so you have to create the new rev before deleting the
+    # conflicting revs.
+    #
+    assert update_document(host, db2, conflict.current_rev, conflict.current_rev["ts"])
+    conflicts = get_conflicts(host, db2)
+    assert 1 == len(conflicts)
+    conflict = conflicts[0]
+    print conflict.as_big_str()
     for rev_in_conflict in conflict.revs_in_conflict:
         assert delete_document(host, db2, rev_in_conflict)
-    assert update_document(host, db2, conflict.current_rev, conflict.current_rev["ts"])
 
     assert 0 == len(get_conflicts(host, db2))
 

@@ -11,7 +11,7 @@ class Model(object):
 
         self._callback = None
 
-    def as_dict_for_store(self):
+    def as_doc_for_store(self):
         rv = {}
         if self._id:
             rv["_id"] = self._id
