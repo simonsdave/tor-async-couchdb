@@ -22,12 +22,6 @@ from tor_async_couchdb.model import Model
 _logger = logging.getLogger(__name__)
 
 
-def _utc_now():
-    now = datetime.datetime.utcnow()
-    now = now.replace(tzinfo=dateutil.tz.tzutc())
-    return now
-
-
 class Fruit(Model):
 
     def __init__(self, **kwargs):
@@ -43,7 +37,7 @@ class Fruit(Model):
 
         self.fruit_id = kwargs["fruit_id"]
         self.fruit = type(self).get_random_fruit()
-        utc_now = _utc_now()
+        utc_now = datetime.datetime.utcnow().replace(tzinfo=dateutil.tz.tzutc())
         self.created_on = utc_now
         self.updated_on = utc_now
 
@@ -103,7 +97,7 @@ class AsyncFruitsRetriever(async_model_actions.AsyncModelsRetriever):
 
 class RequestHandler(tornado.web.RequestHandler):
 
-    def fruit_as_dict(self, fruit):
+    def fruit_as_dict_for_response_body(self, fruit):
         return {
             "_id": fruit._id,
             "_rev": fruit._rev,
@@ -121,7 +115,7 @@ class CollectionsRequestHandler(RequestHandler):
     @tornado.web.asynchronous
     def post(self):
         def on_persist_done(is_ok, is_conflict, ap):
-            self.write(json.dumps(self.fruit_as_dict(ap.model)))
+            self.write(json.dumps(self.fruit_as_dict_for_response_body(ap.model)))
             self.set_status(httplib.CREATED)
             self.finish()
 
@@ -137,7 +131,7 @@ class CollectionsRequestHandler(RequestHandler):
                 self.finish()
                 return
 
-            dicts = [self.fruit_as_dict(fruit) for fruit in fruits]
+            dicts = [self.fruit_as_dict_for_response_body(fruit) for fruit in fruits]
             self.write(json.dumps(dicts))
             self.set_status(httplib.OK)
             self.finish()
@@ -146,7 +140,7 @@ class CollectionsRequestHandler(RequestHandler):
         absr.fetch(on_fetch_done)
 
 
-class IndividualsRequestHandler(RequestHandler):
+class IndividualRequestHandler(RequestHandler):
 
     url_spec = r"/v1.0/fruits/([^/]+)"
 
@@ -158,7 +152,7 @@ class IndividualsRequestHandler(RequestHandler):
                 self.finish()
                 return
 
-            self.write(json.dumps(self.fruit_as_dict(fruit)))
+            self.write(json.dumps(self.fruit_as_dict_for_response_body(fruit)))
             self.set_status(httplib.OK)
             self.finish()
 
@@ -187,7 +181,7 @@ class IndividualsRequestHandler(RequestHandler):
             self.finish()
             return
 
-        self.write(json.dumps(self.fruit_as_dict(afp.model)))
+        self.write(json.dumps(self.fruit_as_dict_for_response_body(afp.model)))
         self.set_status(httplib.OK)
         self.finish()
 
@@ -225,24 +219,28 @@ class CommandLineParser(optparse.OptionParser):
             type="string",
             help=help)
 
+        default = r"http://127.0.0.1:5984/tor_async_couchdb_sample_basic"
+        help = "database - default = %s" % default
+        self.add_option(
+            "--database",
+            action="store",
+            dest="database",
+            default=default,
+            type="string",
+            help=help)
+
 
 if __name__ == "__main__":
     clp = CommandLineParser()
     (clo, cla) = clp.parse_args()
 
-    #
-    # configure logging
-    #
     logging.Formatter.converter = time.gmtime   # remember gmt = utc
     logging.basicConfig(
         level=logging.INFO,
         datefmt="%Y-%m-%dT%H:%M:%S",
         format="%(asctime)s.%(msecs)03d+00:00 %(levelname)s %(module)s %(message)s")
 
-    #
-    # configure async_model_actions to point to our database
-    #
-    async_model_actions.database = r"http://127.0.0.1:5984/tor_async_couchdb_sample_basic"
+    async_model_actions.database = clo.database
 
     handlers = [
         (
@@ -250,8 +248,8 @@ if __name__ == "__main__":
             CollectionsRequestHandler
         ),
         (
-            IndividualsRequestHandler.url_spec,
-            IndividualsRequestHandler
+            IndividualRequestHandler.url_spec,
+            IndividualRequestHandler
         ),
     ]
 
@@ -264,8 +262,9 @@ if __name__ == "__main__":
     http_server.listen(port=clo.port, address=clo.ip)
 
     _logger.info(
-        "service started and listening on http://%s:%d",
+        "service started and listening on http://%s:%d talking to database %s",
         clo.ip,
-        clo.port)
+        clo.port,
+        clo.database)
 
     tornado.ioloop.IOLoop.instance().start()
