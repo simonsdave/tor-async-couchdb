@@ -210,7 +210,7 @@ def _delete_database(database, host, session, verify_host_ssl_cert):
             "No need to delete database '%s' on '%s' "
             "since database doesn't exist"
         )
-        _logger.error(fmt, database, host)
+        _logger.info(fmt, database, host)
         return True
 
     url = "%s/%s" % (host, database)
