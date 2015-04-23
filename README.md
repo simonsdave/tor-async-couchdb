@@ -11,8 +11,10 @@ samples are best way to gain an understanding of the code and capabilities
 
 Key features:
 
-* defines a pattern for mapping instances of Python
-model classes to CouchDB documents with well defined
+* **Python object to CouchDB doc mapping** - defines a an
+approach for easily mapping instances of Python
+model classes (objects) to CouchDB documents
+* with well defined
 points of extensibility at which model properties can
 be encrypted/hashed before being written to CouchDB and
 decrypted after being read from CouchDB
@@ -46,7 +48,7 @@ a distributed with reasonably high concurrency levels and
 a generally high level of paranoia
 * :TODO: add use of ```include_docs``` to reduce view disk
 space consumption
-* :TODO: never delete/most recent sytle queries
+* :TODO: never delete/most recent style queries
 
 ```tor-async-couchdb``` is known to work with:
 
