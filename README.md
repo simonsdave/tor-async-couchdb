@@ -21,7 +21,9 @@ samples are best way to gain an understanding of the code and capabilities
 
 * Cloudant's DBaaS offering as well as Cloudant Local
 
-#Functional Capabilities
+#Capabilities
+
+##Functional Capabilities
 * **Python object to CouchDB doc mapping** - easily mapping instances of
 Python model classes (objects) to CouchDB documents
 * **async persist** of model instances
@@ -45,14 +47,14 @@ of code; the utility classes require that design documents
 and seed documents are declared in a manner that makes
 authoring ```setup.py```'s a snap
 
-#Security Capabilities
+##Security Capabilities
 * app tier optionally **authenticate to CouchDB using BASIC authentication**
 * with well defined points of extensibility in Python object to
 CouchDB doc mapping which enables **per property encryption/hashing**
 * **anti-tampering** which ensures CouchDB documents
 can only be created and updated by a service's application tier
 
-##Architectural Context
+#Architectural Context
 In order to understand the value that ```tor-async-couchdb``` enables
 it's helpful to consider the architectural context within which
 ```tor-async-couchdb``` was intended to be deployed.
@@ -74,7 +76,7 @@ CouchDB called Cloudant enables both horizontal scaling of the data tier
 * when load balancing and proxying are required, tried and tested haproxy
 and nginx are the preferred tools
 
-##Using
+#Using
 
 Add the following line to your requirements.txt
 ```
