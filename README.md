@@ -52,6 +52,28 @@ CouchDB doc mapping which enables **per property encryption/hashing**
 * **anti-tampering** which ensures CouchDB documents
 can only be created and updated by a service's application tier
 
+##Architectural Context
+In order to understand the value that ```tor-async-couchdb``` enables
+it's helpful to consider the architectural context within which
+```tor-async-couchdb``` was intended to be deployed.
+Below is the outline of that context:
+
+* service infrastructure is deployed into IaaS providers (AWS, GCE, etc) - the important point here is that we have access to elastic computing (we can spin up new servers in minutes) - multiple providers is nice from an availability point of view but also ensures that if for some super odd reason an individual provider runs out of server capacity we can use other providers - worth noting that the service infrastructure simultaneously operates in multiple deployments (data centers) at multiple IaaS providers with DNS being used to route requests to the network wise closet deployment
+* each tier (app tiers and data tier) of the service infrastructure scales horizontally - the important point with this is that we can spin up new servers (see above), deploy app or data services to the new servers and those new services immediately increase the capacity of a tier)
+* app tier horizontal scale is well understood these days and is typically
+accomplished using an entirely stateless app tier
+* optimization of app tier server resources is accomplished by using
+Tornado's [Asynchronous and non-Blocking I/O](http://tornado.readthedocs.org/en/latest/guide/async.html)
+as an elegant solution to the [C10K problem](http://en.wikipedia.org/wiki/C10k_problem)
+* how does the data tier scale horizontally (& across data centers)? answer = leverage NoSQL databases
+which are designed to scale horizontally and support multi-master replication;
+CouchDB is the database or choice in the data tier because of its exceptionally strong
+replication capabilities and that enables the simultaneous multiple data center
+deployment previously described; CouchDB 2.0 and IBM's commercial offering of
+CouchDB called Cloudant enables both horizontal scaling of the data tier
+* when load balancing and proxying are required, tried and tested haproxy
+and nginx are the preferred tools
+
 ##Using
 
 Add the following line to your requirements.txt

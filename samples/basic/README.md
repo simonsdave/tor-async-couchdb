@@ -18,12 +18,7 @@ The data tier is implemented using CouchDB.
 Create the database on CouchDB running on ```http://127.0.0.1:5984```
 using the installer.
 ```bash
->./installer.py --log=info --delete=true --create=true
-INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): 127.0.0.1
-INFO:tor_async_couchdb.installer:Deleting database 'tor_async_couchdb_sample_basic' on 'http://127.0.0.1:5984'
-INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): 127.0.0.1
-ERROR:tor_async_couchdb.installer:No need to delete database 'tor_async_couchdb_sample_basic' on 'http://127.0.0.1:5984' since database doesn't exist
-(env)>./installer.py --create=true --log=info
+>./installer.py --create=true --log=info
 INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): 127.0.0.1
 INFO:tor_async_couchdb.installer:Creating database 'tor_async_couchdb_sample_basic' on 'http://127.0.0.1:5984'
 INFO:requests.packages.urllib3.connectionpool:Starting new HTTP connection (1): 127.0.0.1
