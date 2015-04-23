@@ -6,49 +6,8 @@ tor-async-couchdb is intended to operate as part of a service's application
 tier (implemented using Tornado's [Asynchronous and non-Blocking I/O](http://tornado.readthedocs.org/en/latest/guide/async.html))
 and interact with the service's data tier (implemented using CouchDB).
 
-Note - ```tor-async-couchdb``` is poorly documented (@ the moment) - tests &
+>**Note** - ```tor-async-couchdb``` is poorly documented (@ the moment) - tests &
 samples are best way to gain an understanding of the code and capabilities
-
-Key features:
-
-* **Python object to CouchDB doc mapping** - defines a an
-approach for easily mapping instances of Python
-model classes (objects) to CouchDB documents
-* with well defined
-points of extensibility at which model properties can
-be encrypted/hashed before being written to CouchDB and
-decrypted after being read from CouchDB
-* async persisting of model instances
-* async retrieval of individual and collections of
-model instances with well defined responsibilities
-between the async client and CouchDB views
-* enables querying of document by a CouchDB view using
-any document property and documents are always retrieved
-via a view
-* anti-tampering capability that ensures CouchDB documents
-can only be created and update by a service's application
-tier
-* a collection of utility classes that make creating a
-Python based CouchDB installer possible in only a few lines
-of code; the utility classes require that design documents
-and seed documents are declared in a manner that makes
-authoring ```setup.py```'s a snap
-* an approach to document IDs which encourages users
-of ```tor-async-couchdb``` to allow CouchDB to generate
-document identifiers to avoid btree fragmentation
-* ```tor-async-couchdb```'s interface encourages users
-of the package to deal with CouchDB's document conflict
-errors using a retry pattern
-* encourages a particular approach to NoSQL data model that permits
-automated reconciliation of document conflicts and enables true
-multi-master replication scenarios and a path to satisfying
-data and information classification policies
-* ```tor-async-couchdb``` has been used for a while in
-a distributed with reasonably high concurrency levels and
-a generally high level of paranoia
-* :TODO: add use of ```include_docs``` to reduce view disk
-space consumption
-* :TODO: never delete/most recent style queries
 
 ```tor-async-couchdb``` is known to work with:
 
@@ -58,9 +17,40 @@ space consumption
 * Mac OS X 10.9
 * Ubuntu 12.04 and 14.04
 
-```tor-async-couchdb``` has been used with but less extensively tested with:
+```tor-async-couchdb``` has been used with although not extensively tested with:
 
 * Cloudant's DBaaS offering as well as Cloudant Local
+
+#Functional Capabilities
+* **Python object to CouchDB doc mapping** - easily mapping instances of
+Python model classes (objects) to CouchDB documents
+* **async persist** of model instances
+* **async doc retrieval** of individual docs and of collections of docs
+* **doc query by any document property** using disk space optimized
+CouchDB views
+* **CouchDB b-tree friendly document IDs**
+* ```tor-async-couchdb```'s interface encourages users
+of the package to deal with CouchDB's document conflict
+errors using a retry pattern
+* encourages an approach to **NoSQL data modeling** that enables
+  * **automated reconciliation of document conflicts** thus enabling true
+    multi-master replication which in turn permit deployments with
+    multiple, simultaneously active data centers
+  * **satisfying data and information classification policies**
+* :TODO: never delete/most recent style queries
+
+* a collection of utility classes that make creating a
+Python based **CouchDB database installer** possible in only a few lines
+of code; the utility classes require that design documents
+and seed documents are declared in a manner that makes
+authoring ```setup.py```'s a snap
+
+#Security Capabilities
+* app tier optionally **authenticate to CouchDB using BASIC authentication**
+* with well defined points of extensibility in Python object to
+CouchDB doc mapping which enables **per property encryption/hashing**
+* **anti-tampering** which ensures CouchDB documents
+can only be created and updated by a service's application tier
 
 ##Using
 
