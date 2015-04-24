@@ -21,6 +21,8 @@ from tor_async_couchdb.model import Model
 
 _logger = logging.getLogger(__name__)
 
+def _utc_now():
+    return datetime.datetime.utcnow().replace(tzinfo=dateutil.tz.tzutc())
 
 class Fruit(Model):
 
@@ -35,9 +37,9 @@ class Fruit(Model):
             self.updated_on = dateutil.parser.parse(doc["updated_on"])
             return
 
-        self.fruit_id = kwargs["fruit_id"]
-        self.fruit = type(self).get_random_fruit()
-        utc_now = datetime.datetime.utcnow().replace(tzinfo=dateutil.tz.tzutc())
+        self.fruit_id = kwargs["fruit_id"] 
+        self.fruit = kwargs["fruit"]
+        utc_now = _utc_now()
         self.created_on = utc_now
         self.updated_on = utc_now
 
@@ -50,8 +52,9 @@ class Fruit(Model):
         rv["updated_on"] = self.updated_on.isoformat()
         return rv
 
-    def change_fruit(self):
-        self.fruit = type(self).get_random_fruit(self.fruit)
+    def change_fruit(self, fruit):
+        self.fruit = fruit
+        self.updated_on = _utc_now()
 
     @classmethod
     def get_random_fruit(cls, but_not_this_fruit=None):
@@ -115,11 +118,13 @@ class CollectionsRequestHandler(RequestHandler):
     @tornado.web.asynchronous
     def post(self):
         def on_persist_done(is_ok, is_conflict, ap):
-            self.write(json.dumps(self.fruit_as_dict_for_response_body(ap.model)))
+            fruit = ap.model
+            self.write(json.dumps(self.fruit_as_dict_for_response_body(fruit)))
             self.set_status(httplib.CREATED)
             self.finish()
 
-        fruit = Fruit(fruit_id=uuid.uuid4().hex)
+        fruit = Fruit(fruit_id=uuid.uuid4().hex, fruit=Fruit.get_random_fruit())
+
         ap = AsyncFruitPersister(fruit)
         ap.persist(on_persist_done)
 
@@ -170,7 +175,7 @@ class IndividualRequestHandler(RequestHandler):
             self.finish()
             return
 
-        fruit.change_fruit()
+        fruit.change_fruit(type(fruit).get_random_fruit(fruit.fruit))
 
         afp = AsyncFruitPersister(fruit)
         afp.persist(self._put_on_async_persist_done)
