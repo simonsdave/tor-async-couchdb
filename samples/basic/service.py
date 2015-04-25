@@ -21,8 +21,10 @@ from tor_async_couchdb.model import Model
 
 _logger = logging.getLogger(__name__)
 
+
 def _utc_now():
     return datetime.datetime.utcnow().replace(tzinfo=dateutil.tz.tzutc())
+
 
 class Fruit(Model):
 
@@ -37,7 +39,7 @@ class Fruit(Model):
             self.updated_on = dateutil.parser.parse(doc["updated_on"])
             return
 
-        self.fruit_id = kwargs["fruit_id"] 
+        self.fruit_id = kwargs["fruit_id"]
         self.fruit = kwargs["fruit"]
         utc_now = _utc_now()
         self.created_on = utc_now

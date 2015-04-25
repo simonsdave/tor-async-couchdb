@@ -1,7 +1,6 @@
 import httplib
 import json
 import random
-import sys
 
 import locust
 import requests
