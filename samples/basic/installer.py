@@ -19,7 +19,7 @@ class CommandLineParser(installer.CommandLineParser):
         installer.CommandLineParser.__init__(
             self,
             description,
-            "tor_async_couchdb_sample_basic")
+            "tor_async_couchdb_sample")
 
 if __name__ == "__main__":
     sys.exit(installer.main(CommandLineParser(), design_docs))

@@ -265,7 +265,7 @@ class CommandLineParser(optparse.OptionParser):
             type="string",
             help=help)
 
-        default = r"http://127.0.0.1:5984/tor_async_couchdb_sample_basic"
+        default = r"http://127.0.0.1:5984/tor_async_couchdb_sample"
         help = "database - default = %s" % default
         self.add_option(
             "--database",
