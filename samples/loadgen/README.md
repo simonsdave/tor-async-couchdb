@@ -27,5 +27,6 @@ Note - this should be obvious but in case not ...
 the loadgen utility is designed to exercise ```tor-async-couchdb```'s
 conflict resolution logic which is trigged when multiple requests attempt to
 do things to the same resource.
-The probability is a conflict being generated increases both as the number
-of concurrent requests increases and the number of resources decreases.
+The probability of a conflict being generated increases both as the number
+of concurrent requests increases, the percentage of ```PUT``` requests increases
+and the number of resources decreases.
