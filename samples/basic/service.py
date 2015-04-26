@@ -119,7 +119,7 @@ class RequestHandler(tornado.web.RequestHandler):
         }
 
 
-class CollectionsRequestHandler(RequestHandler):
+class MultipleResourcesRequestHandler(RequestHandler):
 
     url_spec = r"/v1.0/fruits"
 
@@ -153,7 +153,7 @@ class CollectionsRequestHandler(RequestHandler):
         absr.fetch(on_fetch_done)
 
 
-class IndividualRequestHandler(RequestHandler):
+class SingleResourceRequestHandler(RequestHandler):
 
     url_spec = r"/v1.0/fruits/([^/]+)"
 
@@ -290,12 +290,12 @@ if __name__ == "__main__":
 
     handlers = [
         (
-            CollectionsRequestHandler.url_spec,
-            CollectionsRequestHandler
+            MultipleResourcesRequestHandler.url_spec,
+            MultipleResourcesRequestHandler
         ),
         (
-            IndividualRequestHandler.url_spec,
-            IndividualRequestHandler
+            SingleResourceRequestHandler.url_spec,
+            SingleResourceRequestHandler
         ),
     ]
 
