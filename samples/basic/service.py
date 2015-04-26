@@ -138,7 +138,7 @@ class CollectionsRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def get(self):
-        def on_fetch_done(is_ok, fruits, absr):
+        def on_fetch_done(is_ok, fruits, afr):
             if not is_ok:
                 self.set_status(httplib.INTERNAL_SERVER_ERROR)
                 self.finish()
@@ -149,8 +149,8 @@ class CollectionsRequestHandler(RequestHandler):
             self.set_status(httplib.OK)
             self.finish()
 
-        absr = AsyncFruitsRetriever()
-        absr.fetch(on_fetch_done)
+        afr = AsyncFruitsRetriever()
+        afr.fetch(on_fetch_done)
 
 
 class IndividualRequestHandler(RequestHandler):
@@ -159,7 +159,7 @@ class IndividualRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def get(self, fruit_id):
-        def on_fetch_done(is_ok, fruit, abr):
+        def on_fetch_done(is_ok, fruit, afr):
             if fruit is None:
                 self.set_status(httplib.NOT_FOUND)
                 self.finish()
@@ -169,15 +169,15 @@ class IndividualRequestHandler(RequestHandler):
             self.set_status(httplib.OK)
             self.finish()
 
-        abr = AsyncFruitRetriever(fruit_id)
-        abr.fetch(on_fetch_done)
+        afr = AsyncFruitRetriever(fruit_id)
+        afr.fetch(on_fetch_done)
 
     @tornado.web.asynchronous
     def put(self, fruit_id):
-        abr = AsyncFruitRetriever(fruit_id)
-        abr.fetch(self._put_on_fetch_done)
+        afr = AsyncFruitRetriever(fruit_id)
+        afr.fetch(self._put_on_fetch_done)
 
-    def _put_on_fetch_done(self, is_ok, fruit, abr):
+    def _put_on_fetch_done(self, is_ok, fruit, afr):
         if not is_ok:
             self.set_status(httplib.INTERNAL_SERVER_ERROR)
             self.finish()
@@ -205,10 +205,10 @@ class IndividualRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def delete(self, fruit_id):
-        abr = AsyncFruitRetriever(fruit_id)
-        abr.fetch(self._delete_on_fetch_done)
+        afr = AsyncFruitRetriever(fruit_id)
+        afr.fetch(self._delete_on_fetch_done)
 
-    def _delete_on_fetch_done(self, is_ok, fruit, abr):
+    def _delete_on_fetch_done(self, is_ok, fruit, afr):
         if not is_ok:
             self.set_status(httplib.INTERNAL_SERVER_ERROR)
             self.finish()
