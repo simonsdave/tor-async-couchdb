@@ -11,6 +11,7 @@ import requests
 
 _base_url = "http://127.0.0.1:8445"
 
+
 class TheTestCase(unittest.TestCase):
 
     def _get_all(self):
@@ -102,11 +103,11 @@ class TheTestCase(unittest.TestCase):
             "%s/v1.0/fruits/%s" % (_base_url, fruit_id),
             headers=headers,
             data=json.dumps(payload))
-        self.assertEqual(read_response.status_code, httplib.OK)
+        self.assertEqual(update_response.status_code, httplib.OK)
 
         #
         # Delete
         #
         url = "%s/v1.0/fruits/%s" % (_base_url, fruit_id)
         delete_response = requests.delete(url)
-        self.assertEqual(read_response.status_code, httplib.OK)
+        self.assertEqual(delete_response.status_code, httplib.OK)
