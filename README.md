@@ -24,19 +24,20 @@ samples are best way to gain an understanding of the code and capabilities
 #Capabilities
 
 ##Functional Capabilities
-* **Python object to CouchDB doc mapping** - easily mapping instances of
-Python model classes (objects) to CouchDB documents
-* **async persist** of model instances
-* **async doc retrieval** of individual docs and of collections of docs
-* **doc query by any document property** using disk space optimized
-CouchDB views
+* **Python object to CouchDB doc mapping** - easy mapping instances of
+Python model classes (instances) to CouchDB documents
+* **async [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete)** operations on model instances
+* **async collections retrieval** - async retrieval of collections of model instances
+* **async retrieval by any document property** - async'ly retrieve model instances
+and collections of model instances by querying any CouchDB document property
+* **disk space optimized CouchDB views**
 * **CouchDB b-tree friendly document IDs**
 * ```tor-async-couchdb```'s interface encourages users
 of the package to deal with CouchDB's document conflict
-errors using a retry pattern
+errors using a simple retry pattern
 * encourages an approach to **NoSQL data modeling** that enables
   * **automated reconciliation of document conflicts** thus enabling true
-    multi-master replication which in turn permit deployments with
+    multi-master replication which in turn enables deployments with
     multiple, simultaneously active data centers
   * **satisfying data and information classification policies**
 * :TODO: never delete/most recent style queries
@@ -72,9 +73,9 @@ which are designed to scale horizontally and support multi-master replication;
 CouchDB is the database or choice in the data tier because of its exceptionally strong
 replication capabilities and that enables the simultaneous multiple data center
 deployment previously described; CouchDB 2.0 and IBM's commercial offering of
-CouchDB called Cloudant enables both horizontal scaling of the data tier
+CouchDB called Cloudant both enable horizontal scaling of the data tier
 * when load balancing and proxying are required, tried and tested haproxy
-and nginx are the preferred tools
+and nginx are the recommended tools
 
 #Using
 

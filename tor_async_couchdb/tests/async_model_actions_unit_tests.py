@@ -5,6 +5,7 @@ import mock
 import unittest
 import uuid
 
+from ..async_model_actions import AsyncDeleter
 from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
@@ -281,6 +282,100 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
 
         with AsyncCouchDBActionPatcher(True, False, [], the_model._id, the_next_rev):
             the_ap.persist(callback)
+
+
+class AsyncDeleterUnitTaseCase(unittest.TestCase):
+    """A collection of unit tests for the AsyncDeleter class."""
+
+    def test_ctr(self):
+        model = mock.Mock()
+        async_state = mock.Mock()
+
+        ad = AsyncDeleter(model, async_state)
+        self.assertTrue(ad.model is model)
+        self.assertTrue(ad.async_state is async_state)
+
+        ad = AsyncDeleter(model)
+        self.assertTrue(ad.model is model)
+        self.assertIsNone(ad.async_state)
+
+    def test_none_id_and_rev(self):
+        model = mock.Mock()
+        model._id = None
+        model._rev = None
+
+        ad = AsyncDeleter(model)
+
+        callback = mock.Mock()
+        ad.delete(callback)
+        callback.assert_called_once_with(False, False, ad)
+
+    def test_none_id(self):
+        model = mock.Mock()
+        model._id = None
+        model._rev = uuid.uuid4().hex
+
+        ad = AsyncDeleter(model)
+
+        callback = mock.Mock()
+        ad.delete(callback)
+        callback.assert_called_once_with(False, False, ad)
+
+    def test_none_rev(self):
+        model = mock.Mock()
+        model._id = uuid.uuid4().hex
+        model._rev = None
+
+        ad = AsyncDeleter(model)
+
+        callback = mock.Mock()
+        ad.delete(callback)
+        callback.assert_called_once_with(False, False, ad)
+
+    def test_conflict_detected(self):
+        model = mock.Mock()
+        model._id = uuid.uuid4().hex
+        model._rev = uuid.uuid4().hex
+
+        ad = AsyncDeleter(model)
+        with AsyncCouchDBActionPatcher(False,   # is_ok
+                                       True,    # is_conflict
+                                       None,    # models
+                                       None,    # _id
+                                       None):   # _rev
+            callback = mock.Mock()
+            ad.delete(callback)
+            callback.assert_called_once_with(False, True, ad)
+
+    def test_error_on_delete(self):
+        model = mock.Mock()
+        model._id = uuid.uuid4().hex
+        model._rev = uuid.uuid4().hex
+
+        ad = AsyncDeleter(model)
+        with AsyncCouchDBActionPatcher(False,   # is_ok
+                                       False,   # is_conflict
+                                       None,    # models
+                                       None,    # _id
+                                       None):   # _rev
+            callback = mock.Mock()
+            ad.delete(callback)
+            callback.assert_called_once_with(False, False, ad)
+
+    def test_happy_path(self):
+        model = mock.Mock()
+        model._id = uuid.uuid4().hex
+        model._rev = uuid.uuid4().hex
+
+        ad = AsyncDeleter(model)
+        with AsyncCouchDBActionPatcher(True,    # is_ok
+                                       False,   # is_conflict
+                                       None,    # models
+                                       None,    # _id
+                                       None):   # _rev
+            callback = mock.Mock()
+            ad.delete(callback)
+            callback.assert_called_once_with(True, False, ad)
 
 
 class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):

@@ -338,7 +338,6 @@ class AsyncPersister(AsyncAction):
         self.model = model
         self.model_as_doc_for_store_args = model_as_doc_for_store_args
 
-        # self._acdba is here only because it makes unit testing easier
         self._callback = None
 
     def persist(self, callback):
@@ -376,6 +375,42 @@ class AsyncPersister(AsyncAction):
             self.model._rev = _rev
 
         self._call_callback(is_ok, is_conflict)
+
+    def _call_callback(self, is_ok, is_conflict):
+        assert self._callback is not None
+        assert (is_ok and not is_conflict) or (not is_ok)
+        self._callback(is_ok, is_conflict, self)
+        self._callback = None
+
+
+class AsyncDeleter(AsyncAction):
+    """Async'ly delete a model object."""
+
+    def __init__(self, model, async_state=None):
+        AsyncAction.__init__(self, async_state)
+
+        self.model = model
+
+        self._callback = None
+
+    def delete(self, callback):
+        assert not self._callback
+        self._callback = callback
+
+        if not self.model._id or not self.model._rev:
+            self._call_callback(False, False)
+            return
+
+        def on_acdba_fetch_done(is_ok, is_conflict, models, _id, _rev, acdba):
+            self._call_callback(is_ok, is_conflict)
+
+        acdba = _AsyncCouchDBAction(
+            "%s?rev=%s" % (self.model._id, self.model._rev),
+            "DELETE",
+            None,           # body
+            httplib.OK,
+            None)           # create_model_from_doc
+        acdba.fetch(on_acdba_fetch_done)
 
     def _call_callback(self, is_ok, is_conflict):
         assert self._callback is not None

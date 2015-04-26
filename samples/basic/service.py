@@ -88,6 +88,12 @@ class AsyncFruitRetriever(async_model_actions.AsyncModelRetriever):
         return Fruit(doc=doc)
 
 
+class AsyncFruitDeleter(async_model_actions.AsyncDeleter):
+
+    def __init__(self, fruit, async_state=None):
+        async_model_actions.AsyncDeleter.__init__(self, fruit, async_state)
+
+
 class AsyncFruitsRetriever(async_model_actions.AsyncModelsRetriever):
 
     def __init__(self, async_state=None):
@@ -172,6 +178,11 @@ class IndividualRequestHandler(RequestHandler):
         abr.fetch(self._put_on_fetch_done)
 
     def _put_on_fetch_done(self, is_ok, fruit, abr):
+        if not is_ok:
+            self.set_status(httplib.INTERNAL_SERVER_ERROR)
+            self.finish()
+            return
+
         if fruit is None:
             self.set_status(httplib.NOT_FOUND)
             self.finish()
@@ -189,6 +200,34 @@ class IndividualRequestHandler(RequestHandler):
             return
 
         self.write(json.dumps(self.fruit_as_dict_for_response_body(afp.model)))
+        self.set_status(httplib.OK)
+        self.finish()
+
+    @tornado.web.asynchronous
+    def delete(self, fruit_id):
+        abr = AsyncFruitRetriever(fruit_id)
+        abr.fetch(self._delete_on_fetch_done)
+
+    def _delete_on_fetch_done(self, is_ok, fruit, abr):
+        if not is_ok:
+            self.set_status(httplib.INTERNAL_SERVER_ERROR)
+            self.finish()
+            return
+
+        if fruit is None:
+            self.set_status(httplib.NOT_FOUND)
+            self.finish()
+            return
+
+        afp = AsyncFruitDeleter(fruit)
+        afp.delete(self._delete_on_async_delete_done)
+
+    def _delete_on_async_delete_done(self, is_ok, is_conflict, afp):
+        if not is_ok:
+            self.set_status(httplib.INTERNAL_SERVER_ERROR)
+            self.finish()
+            return
+
         self.set_status(httplib.OK)
         self.finish()
 

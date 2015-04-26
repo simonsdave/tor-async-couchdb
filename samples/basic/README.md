@@ -30,7 +30,8 @@ INFO:tor_async_couchdb.installer:Successfully created design doc 'http://127.0.0
 ```
 
 #Running the Service
-Service's command line options
+
+##Command line options
 ```bash
 >./service.py --help
 Usage: service.py [options]
@@ -46,14 +47,15 @@ Options:
                        http://127.0.0.1:5984/tor_async_couchdb_sample_basic
 ```
 
-Service startup
+##Startup
 ```bash
 >./service.py
 2015-04-22T11:56:57.724+00:00 INFO service service started and listening on http://127.0.0.1:8445 talking to database http://127.0.0.1:5984/tor_async_couchdb_sample_basic
 ```
 
 #Exercising the Service's API
-Create
+
+##Create
 ```bash
 >curl -s -X POST http://127.0.0.1:8445/v1.0/fruits | python -m json.tool
 {
@@ -64,9 +66,10 @@ Create
     "fruit_id": "455aab1b747e40a89034877e2c963179",
     "updated_on": "2015-04-22T11:58:41.347308+00:00"
 }
+>
 ```
 
-Get individual
+##Read
 ```bash
 >curl -s http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | python -m json.tool{
     "_id": "345d17dae686f2b435881085198afc39",
@@ -76,9 +79,10 @@ Get individual
     "fruit_id": "455aab1b747e40a89034877e2c963179",
     "updated_on": "2015-04-22T11:58:41.347308+00:00"
 }
+>
 ```
 
-Update
+##Update
 ```bash
 >curl -s -X PUT http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | python -m json.tool
 {
@@ -98,21 +102,22 @@ Update
     "fruit_id": "455aab1b747e40a89034877e2c963179",
     "updated_on": "2015-04-22T11:58:41.347308+00:00"
 }
+>
 ```
 
-Get all
+##Delete
 ```bash
+>curl -s -X DELETE http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179
+>
+```
+
+##Read All
+```bash
+>#create 10 fruit resources
+>for i in `seq 10`; do curl -s -X POST http://127.0.0.1:8445/v1.0/fruits; done
+>#lots of output cut
 >curl -s http://127.0.0.1:8445/v1.0/fruits | python -m json.tool
-[
-    {
-        "_id": "345d17dae686f2b435881085198afc39",
-        "_rev": "3-fe7b3d270fa598b88d646687488aa766",
-        "created_on": "2015-04-22T11:58:41.347308+00:00",
-        "fruit": "orange",
-        "fruit_id": "455aab1b747e40a89034877e2c963179",
-        "updated_on": "2015-04-22T11:58:41.347308+00:00"
-    }
-]
+>#lots of output cut
 ```
 
 # Service's Data Model
