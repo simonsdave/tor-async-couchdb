@@ -14,6 +14,12 @@ Specifically, this sample illustrates how
 to implement on-write retry logic that works with CouchDB's
 Multi-Version Concurrency Control (MVCC) approach to conflicts.
 
+#[db_installer](db_installer)
+[db_installer](db_installer) demonstrates how to use ```tor-async-couchdb```
+to create a CouchDB database installer. The database created by
+the installer is used for each of the ```tor-async-couchdb```
+samples.
+
 #[tests.py](tests.py)
 Once you have spun up one of the sample services you can run
 a sanity test suite against the service using a

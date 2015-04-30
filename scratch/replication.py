@@ -275,7 +275,6 @@ def main():
     #
     # Create a conflict
     #
-
     assert update_document(host, db1, get_document_by_doc_id(host, db1, doc_id))
     time.sleep(0.1)     # make sure conflict really is created
     assert update_document(host, db2, get_document_by_doc_id(host, db2, doc_id))
@@ -284,10 +283,14 @@ def main():
         get_document_by_doc_id(host, db1, doc_id),
         get_document_by_doc_id(host, db2, doc_id))
 
-    #
-    # trigger replication from db1 to db2 which should cause a conflict to be
-    # detected in db2
-    #
+    # at this point there should be no conflicts
+    conflicts = get_conflicts(host, db1)
+    assert 0 == len(conflicts)
+
+    conflicts = get_conflicts(host, db2)
+    assert 0 == len(conflicts)
+
+    # replication from db1 to db2 should cause a conflict in db2
     assert trigger_replication(host, db1, db2)
 
     """
