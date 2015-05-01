@@ -8,8 +8,8 @@ import requests
 
 _host = "http://127.0.0.1:8445"
 _verify_cert = False
-_timeout = 10.0
-_number_fruits = 30
+_timeout = 30.0
+_number_fruits = 25
 _weight_get = 100
 _weight_put = 0
 
