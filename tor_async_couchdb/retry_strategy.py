@@ -8,6 +8,7 @@ import random
 
 from tornado.ioloop import IOLoop
 
+
 class RetryStrategy(object):
     """With CouchDB's optimistic concurrency it's possible for
     document updates and deletes to result in a 409 Conflict. When this
