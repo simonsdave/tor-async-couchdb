@@ -12,6 +12,11 @@ class Fruit(Model):
 
         if "doc" in kwargs:
             doc = kwargs["doc"]
+
+            doc_type = doc["type"]
+            if doc_type != "fruit_v1.0":
+                raise Exception("Unknown fruit doc type '%s'" % doc_type)
+
             self.fruit_id = doc["fruit_id"]
             self.fruit = doc["fruit"]
             self.created_on = dateutil.parser.parse(doc["created_on"])
