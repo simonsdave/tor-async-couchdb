@@ -3,107 +3,23 @@
 demonstrates how tor-async-couchdb was intended to be used.
 """
 
-import datetime
 import httplib
 import json
 import logging
 import optparse
-import random
 import time
-import uuid
 
-import dateutil.parser
 import tornado.httpserver
 import tornado.web
 
 from tor_async_couchdb import async_model_actions
-from tor_async_couchdb.model import Model
+from async_actions import AsyncFruitsRetriever
+from async_actions import AsyncFruitRetriever
+from async_actions import AsyncFruitCreator
+from async_actions import AsyncFruitDeleter
+from async_actions import AsyncFruitUpdater
 
 _logger = logging.getLogger(__name__)
-
-
-def _utc_now():
-    return datetime.datetime.utcnow().replace(tzinfo=dateutil.tz.tzutc())
-
-
-class Fruit(Model):
-
-    def __init__(self, **kwargs):
-        Model.__init__(self, **kwargs)
-
-        if "doc" in kwargs:
-            doc = kwargs["doc"]
-            self.fruit_id = doc["fruit_id"]
-            self.fruit = doc["fruit"]
-            self.created_on = dateutil.parser.parse(doc["created_on"])
-            self.updated_on = dateutil.parser.parse(doc["updated_on"])
-            return
-
-        self.fruit_id = kwargs["fruit_id"]
-        self.fruit = kwargs["fruit"]
-        utc_now = _utc_now()
-        self.created_on = utc_now
-        self.updated_on = utc_now
-
-    def as_doc_for_store(self):
-        rv = Model.as_doc_for_store(self)
-        rv["type"] = "fruit_v1.0"
-        rv["fruit_id"] = self.fruit_id
-        rv["fruit"] = self.fruit
-        rv["created_on"] = self.created_on.isoformat()
-        rv["updated_on"] = self.updated_on.isoformat()
-        return rv
-
-    def change_fruit(self, fruit):
-        self.fruit = fruit
-        self.updated_on = _utc_now()
-
-    @classmethod
-    def get_random_fruit(cls, but_not_this_fruit=None):
-        fruits = ["apple", "pear", "fig", "orange", "kiwi"]
-        while True:
-            fruit = random.choice(fruits)
-            if but_not_this_fruit is None:
-                return fruit
-            if but_not_this_fruit != fruit:
-                return fruit
-
-
-class AsyncFruitPersister(async_model_actions.AsyncPersister):
-
-    def __init__(self, fruit, async_state=None):
-        async_model_actions.AsyncPersister.__init__(self, fruit, [], async_state)
-
-
-class AsyncFruitRetriever(async_model_actions.AsyncModelRetriever):
-
-    def __init__(self, fruit_id, async_state=None):
-        async_model_actions.AsyncModelRetriever.__init__(
-            self,
-            "fruit_by_fruit_id",
-            fruit_id,
-            async_state)
-
-    def create_model_from_doc(self, doc):
-        return Fruit(doc=doc)
-
-
-class AsyncFruitDeleter(async_model_actions.AsyncDeleter):
-
-    def __init__(self, fruit, async_state=None):
-        async_model_actions.AsyncDeleter.__init__(self, fruit, async_state)
-
-
-class AsyncFruitsRetriever(async_model_actions.AsyncModelsRetriever):
-
-    def __init__(self, async_state=None):
-        async_model_actions.AsyncModelsRetriever.__init__(
-            self,
-            "fruit_by_fruit_id",
-            async_state)
-
-    def create_model_from_doc(self, doc):
-        return Fruit(doc=doc)
 
 
 class RequestHandler(tornado.web.RequestHandler):
@@ -125,33 +41,33 @@ class MultipleResourcesRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def post(self):
-        def on_persist_done(is_ok, is_conflict, ap):
-            # won't generate conflict because just created the resource
-            fruit = ap.model
-            self.write(json.dumps(self.fruit_as_dict_for_response_body(fruit)))
-            self.set_status(httplib.CREATED)
+        afc = AsyncFruitCreator()
+        afc.create(self._post_on_create_done)
+
+    def _post_on_create_done(self, is_ok, fruit, afc):
+        if not is_ok:
+            self.set_status(httplib.INTERNAL_SERVER_ERROR)
             self.finish()
-
-        fruit = Fruit(fruit_id=uuid.uuid4().hex, fruit=Fruit.get_random_fruit())
-
-        ap = AsyncFruitPersister(fruit)
-        ap.persist(on_persist_done)
+            return
+        self.write(json.dumps(self.fruit_as_dict_for_response_body(fruit)))
+        self.set_status(httplib.CREATED)
+        self.finish()
 
     @tornado.web.asynchronous
     def get(self):
-        def on_fetch_done(is_ok, fruits, afr):
-            if not is_ok:
-                self.set_status(httplib.INTERNAL_SERVER_ERROR)
-                self.finish()
-                return
-
-            dicts = [self.fruit_as_dict_for_response_body(fruit) for fruit in fruits]
-            self.write(json.dumps(dicts))
-            self.set_status(httplib.OK)
-            self.finish()
-
         afr = AsyncFruitsRetriever()
-        afr.fetch(on_fetch_done)
+        afr.fetch(self._get_on_fetch_done)
+
+    def _get_on_fetch_done(self, is_ok, fruits, afr):
+        if not is_ok:
+            self.set_status(httplib.INTERNAL_SERVER_ERROR)
+            self.finish()
+            return
+
+        dicts = [self.fruit_as_dict_for_response_body(fruit) for fruit in fruits]
+        self.write(json.dumps(dicts))
+        self.set_status(httplib.OK)
+        self.finish()
 
 
 class SingleResourceRequestHandler(RequestHandler):
@@ -160,25 +76,10 @@ class SingleResourceRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def get(self, fruit_id):
-        def on_fetch_done(is_ok, fruit, afr):
-            if fruit is None:
-                self.set_status(httplib.NOT_FOUND)
-                self.finish()
-                return
-
-            self.write(json.dumps(self.fruit_as_dict_for_response_body(fruit)))
-            self.set_status(httplib.OK)
-            self.finish()
-
         afr = AsyncFruitRetriever(fruit_id)
-        afr.fetch(on_fetch_done)
+        afr.fetch(self._get_on_fetch_done)
 
-    @tornado.web.asynchronous
-    def put(self, fruit_id):
-        afr = AsyncFruitRetriever(fruit_id, None)
-        afr.fetch(self._put_on_fetch_done)
-
-    def _put_on_fetch_done(self, is_ok, fruit, afr):
+    def _get_on_fetch_done(self, is_ok, fruit, afr):
         if not is_ok:
             self.set_status(httplib.INTERNAL_SERVER_ERROR)
             self.finish()
@@ -189,33 +90,36 @@ class SingleResourceRequestHandler(RequestHandler):
             self.finish()
             return
 
-        new_fruit = afr.async_state if afr.async_state else type(fruit).get_random_fruit(fruit.fruit)
-        fruit.change_fruit(new_fruit)
+        self.write(json.dumps(self.fruit_as_dict_for_response_body(fruit)))
+        self.set_status(httplib.OK)
+        self.finish()
 
-        afp = AsyncFruitPersister(fruit)
-        afp.persist(self._put_on_async_persist_done)
+    @tornado.web.asynchronous
+    def put(self, fruit_id):
+        afu = AsyncFruitUpdater(fruit_id)
+        afu.update(self._put_on_update_done)
 
-    def _put_on_async_persist_done(self, is_ok, is_conflict, afp):
+    def _put_on_update_done(self, is_ok, fruit, afu):
         if not is_ok:
-            if is_conflict:
-                afr = AsyncFruitRetriever(afp.model.fruit_id, afp.model.fruit)
-                afr.fetch(self._put_on_fetch_done)
-                return
-
             self.set_status(httplib.INTERNAL_SERVER_ERROR)
             self.finish()
             return
 
-        self.write(json.dumps(self.fruit_as_dict_for_response_body(afp.model)))
+        if fruit is None:
+            self.set_status(httplib.NOT_FOUND)
+            self.finish()
+            return
+
+        self.write(json.dumps(self.fruit_as_dict_for_response_body(fruit)))
         self.set_status(httplib.OK)
         self.finish()
 
     @tornado.web.asynchronous
     def delete(self, fruit_id):
-        afr = AsyncFruitRetriever(fruit_id)
-        afr.fetch(self._delete_on_fetch_done)
+        afd = AsyncFruitDeleter(fruit_id)
+        afd.delete(self._delete_on_delete_done)
 
-    def _delete_on_fetch_done(self, is_ok, fruit, afr):
+    def _delete_on_delete_done(self, is_ok, fruit, afd):
         if not is_ok:
             self.set_status(httplib.INTERNAL_SERVER_ERROR)
             self.finish()
@@ -223,20 +127,6 @@ class SingleResourceRequestHandler(RequestHandler):
 
         if fruit is None:
             self.set_status(httplib.NOT_FOUND)
-            self.finish()
-            return
-
-        afp = AsyncFruitDeleter(fruit)
-        afp.delete(self._delete_on_async_delete_done)
-
-    def _delete_on_async_delete_done(self, is_ok, is_conflict, afp):
-        if not is_ok:
-            if is_conflict:
-                afr = AsyncFruitRetriever(afp.model.fruit_id)
-                afr.fetch(self._delete_on_fetch_done)
-                return
-
-            self.set_status(httplib.INTERNAL_SERVER_ERROR)
             self.finish()
             return
 
