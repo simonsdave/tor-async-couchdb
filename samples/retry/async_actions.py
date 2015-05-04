@@ -139,7 +139,6 @@ class AsyncFruitDeleter(AsyncAction):
 
         self.fruit_id = fruit_id
 
-        self._rs = ExponentialBackoffRetryStrategy()
         self._callback = None
 
     def delete(self, callback):
@@ -164,32 +163,14 @@ class AsyncFruitDeleter(AsyncAction):
     def _on_delete_done(self, is_ok, is_conflict, ad):
         if not is_ok:
             if is_conflict:
-                _logger.info(
-                    "Conflict detected deleting fruit '%s' - waiting for a bit",
-                    self.fruit_id)
-                self._rs.wait(self._on_rs_wait_done)
+                afr = AsyncFruitRetriever(self.fruit_id)
+                afr.fetch(self._on_fetch_done)
                 return
 
             self._call_callback(False)
             return
 
         self._call_callback(True, ad.model)
-
-    def _on_rs_wait_done(self, waited_in_ms):
-        if not waited_in_ms:
-            _logger.error(
-                "Conflict detected deleting fruit '%s' - bailing because too many retries",
-                self.fruit_id)
-            self._call_callback(False)
-            return
-
-        _logger.info(
-            "Conflict detected deleting fruit '%s' - retrying delete after waiting %d ms",
-            self.fruit_id,
-            waited_in_ms)
-
-        afr = AsyncFruitRetriever(self.fruit_id)
-        afr.fetch(self._on_fetch_done)
 
     def _call_callback(self, is_ok, fruit=None):
         assert self._callback is not None
