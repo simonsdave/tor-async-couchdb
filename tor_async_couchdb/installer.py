@@ -1,37 +1,8 @@
 """This module contains a collection of utility logic that implements
 a CouchDB database installer. To use this module create design documents
-as JSON files (just like CouchDB would expect) but instead of giving
-the files .json extensions give them .py extensions are group them
-all in a single module. For a full description of why the files are
-py files see setup.py - enjoy! Once the design docs have been
-created create a mainline for the installer like the example below:
-
-    #!/usr/bin/env python
-
-    import logging
-
-    from tor_async_couchdb import installer
-    import design_docs
-    import seed_docs
-
-    _logger = logging.getLogger("fruit_store.%s" % __name__)
-
-
-    class CommandLineParser(installer.CommandLineParser):
-
-        def __init__(self):
-            description = (
-                "The Fruit Store Installer is a utility used to create "
-                "and/or delete the CouchDB database that implements "
-                "the Fruit Store."
-            )
-            installer.CommandLineParser.__init__(
-                self,
-                description,
-                "database")
-
-    if __name__ == "__main__":
-        sys.exit(installer.main(CommandLineParser(), design_docs, seed_docs))
+as JSON files (just like CouchDB would expect) and then
+create a mainline for the installer like the example in
+samples/db_installer/installer.py
 
 And that's all there is too it! Pretty sweet right?:-)
 """
@@ -82,7 +53,7 @@ def _create_design_docs(database,
                         host,
                         session,
                         verify_host_ssl_cert,
-                        design_docs_module):
+                        design_docs_folder):
     #
     # iterate thru each file in the design doc module's directory
     # for files that end with ".py" - these files are assumed to be
@@ -94,14 +65,10 @@ def _create_design_docs(database,
         database,
         host)
 
-    path = os.path.split(design_docs_module.__file__)[0]
-    design_doc_filename_pattern = os.path.join(path, "*.py")
+    design_doc_filename_pattern = os.path.join(design_docs_folder, "*.json")
     for design_doc_filename in glob.glob(design_doc_filename_pattern):
 
-        if design_doc_filename.endswith("__init__.py"):
-            continue
-
-        design_doc_name = os.path.basename(design_doc_filename)[:-len(".py")]
+        design_doc_name = os.path.basename(design_doc_filename)[:-len(".json")]
 
         _logger.info(
             "Creating design doc '%s' in database '%s' on '%s' from file '%s'",
@@ -131,7 +98,7 @@ def _create_seed_docs(database,
                       host,
                       session,
                       verify_host_ssl_cert,
-                      seed_docs_module,
+                      seed_docs_folder,
                       seed_doc_signer_dir_name):
     #
     # iterate thru each file in the seed doc module's directory
@@ -153,12 +120,8 @@ def _create_seed_docs(database,
                 seed_doc_signer_dir_name)
             return False
 
-    path = os.path.split(seed_docs_module.__file__)[0]
-    seed_doc_filename_pattern = os.path.join(path, "*.py")
+    seed_doc_filename_pattern = os.path.join(seed_docs_folder, "*.json")
     for seed_doc_filename in glob.glob(seed_doc_filename_pattern):
-
-        if seed_doc_filename.endswith("__init__.py"):
-            continue
 
         _logger.info(
             "Creating seed doc in database '%s' on '%s' from file '%s'",
