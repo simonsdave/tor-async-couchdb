@@ -5,6 +5,7 @@ Tornado async actions against CouchDB.
 import httplib
 import json
 import logging
+import re
 import urllib
 
 import tornado.httputil
@@ -38,6 +39,14 @@ is ```True``` and we're interacting with CouchDB over TLS/SSL (ie
 This config option is very useful when CouchDB self-signed certs.
 """
 validate_cert = True
+
+"""```_doc_type_reg_ex``` is used to verify the format of the
+type property for each document before the document is written
+to the store.
+"""
+_doc_type_reg_ex = re.compile(
+    r"^[^\s]+_v\d+\.\d+$",
+    re.IGNORECASE)
 
 
 class AsyncAction(object):
@@ -329,6 +338,21 @@ class AsyncModelsRetriever(AsyncAction):
         self._callback = None
 
 
+class InvalidTypeInDocForStoreException(Exception):
+    """This exception is raised by ```AsyncPersister``` when
+    a call to a model's as_doc_for_store() generates a doc
+    with an invalid type property.
+    """
+
+    def __init__(self, model):
+        msg_fmt = (
+            "invalid 'type' in doc for store - "
+            "see '%s.as_doc_for_store()"
+        )
+        msg = msg_fmt % type(model)
+        Exception.__init__(self, msg)
+
+
 class AsyncPersister(AsyncAction):
     """Async'ly persist a model object."""
 
@@ -345,6 +369,15 @@ class AsyncPersister(AsyncAction):
         self._callback = callback
 
         model_as_doc_for_store = self.model.as_doc_for_store(*self.model_as_doc_for_store_args)
+
+        #
+        # this check is important because the conflict resolution
+        # logic relies on being able to extract the type name from
+        # a document read from the store
+        #
+        if not _doc_type_reg_ex.match(model_as_doc_for_store["type"]):
+            raise InvalidTypeInDocForStoreException(self.model)
+        
         if "_id" in model_as_doc_for_store:
             path = model_as_doc_for_store["_id"]
             method = "PUT"

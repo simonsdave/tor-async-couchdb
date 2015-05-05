@@ -10,8 +10,25 @@ from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
 from ..async_model_actions import AsyncCouchDBHealthCheck
+from ..async_model_actions import InvalidTypeInDocForStoreException
 from ..model import Model
 from .. import async_model_actions  # noqa, needed for patching using relative path
+
+
+class MyModel(Model):
+
+    def as_doc_for_store(self, *args, **kwargs):
+        rv = Model.as_doc_for_store(self, *args, **kwargs)
+        rv["type"] = "mymodel_v1.0"
+        return rv
+
+
+class MyModelWithBadType(Model):
+
+    def as_doc_for_store(self, *args, **kwargs):
+        rv = Model.as_doc_for_store(self, *args, **kwargs)
+        rv["type"] = "boo"
+        return rv
 
 
 class AsyncCouchDBActionPatcher(object):
@@ -236,7 +253,7 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
     def test_create_new(self):
         """Verify AsyncPersister.persist() when creating a new document."""
 
-        the_model = Model()
+        the_model = MyModel(doc={})
         the_model_as_dict_args = []
         the_ap = AsyncPersister(the_model, the_model_as_dict_args, None)
 
@@ -248,24 +265,27 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
         self.assertIsNone(the_model._rev)
         self.assertNotEqual(the_model._rev, the_rev)
 
-        def callback(is_ok, is_conflict, ap):
-            self.assertTrue(is_ok)
+        with AsyncCouchDBActionPatcher(True, False, [], the_id, the_rev):
+            callback = mock.Mock()
+            the_ap.persist(callback)
+            callback.assert_called_once_with(True, False, the_ap)
+
             self.assertIsNotNone(the_model._id)
             self.assertEqual(the_model._id, the_id)
+
             self.assertIsNotNone(the_model._rev)
             self.assertEqual(the_model._rev, the_rev)
-            self.assertFalse(is_conflict)
-            self.assertTrue(ap is the_ap)
-
-        with AsyncCouchDBActionPatcher(True, False, [], the_id, the_rev):
-            the_ap.persist(callback)
 
     def test_update_existing(self):
         """Verify AsyncPersister.persist() when updating a document
         that already exists.
         """
 
-        the_model = Model(doc={"_id": uuid.uuid4().hex, "_rev": uuid.uuid4().hex})
+        the_model = MyModel(doc={
+            "_id": uuid.uuid4().hex,
+            "_rev": uuid.uuid4().hex,
+        })
+        
         the_model_as_dict_args = []
         the_ap = AsyncPersister(the_model, the_model_as_dict_args, None)
 
@@ -273,15 +293,25 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
         self.assertIsNotNone(the_model._rev)
         self.assertNotEqual(the_model._rev, the_next_rev)
 
-        def callback(is_ok, is_conflict, ap):
-            self.assertTrue(is_ok)
-            self.assertIsNotNone(the_model._rev)
-            self.assertEqual(the_model._rev, the_next_rev)
-            self.assertFalse(is_conflict)
-            self.assertTrue(ap, the_ap)
-
         with AsyncCouchDBActionPatcher(True, False, [], the_model._id, the_next_rev):
+            callback = mock.Mock()
             the_ap.persist(callback)
+            callback.assert_called_once_with(True, False, the_ap)
+            self.assertEqual(the_model._rev, the_next_rev)
+
+    def test_create_new_with_invalid_type_property(self):
+
+        the_model = MyModelWithBadType(doc={})
+        the_model_as_dict_args = []
+        the_ap = AsyncPersister(the_model, the_model_as_dict_args, None)
+
+        the_id = uuid.uuid4().hex
+        the_rev = uuid.uuid4().hex
+
+        with AsyncCouchDBActionPatcher(True, False, [], the_id, the_rev):
+            callback = mock.Mock()
+            with self.assertRaises(InvalidTypeInDocForStoreException):
+                the_ap.persist(callback)
 
 
 class AsyncDeleterUnitTaseCase(unittest.TestCase):
