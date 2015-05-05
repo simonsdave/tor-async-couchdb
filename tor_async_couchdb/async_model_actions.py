@@ -377,7 +377,7 @@ class AsyncPersister(AsyncAction):
         #
         if not _doc_type_reg_ex.match(model_as_doc_for_store["type"]):
             raise InvalidTypeInDocForStoreException(self.model)
-        
+
         if "_id" in model_as_doc_for_store:
             path = model_as_doc_for_store["_id"]
             method = "PUT"

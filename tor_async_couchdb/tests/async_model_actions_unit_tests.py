@@ -285,7 +285,7 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
             "_id": uuid.uuid4().hex,
             "_rev": uuid.uuid4().hex,
         })
-        
+
         the_model_as_dict_args = []
         the_ap = AsyncPersister(the_model, the_model_as_dict_args, None)
 
