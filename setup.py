@@ -7,7 +7,6 @@
 #   >python setup.py sdist --formats=gztar
 #
 import re
-
 from setuptools import setup
 
 #
