@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - aync_model_actions.AsyncModelsRetriever enable querying via start/end keys
+- installer skip pre-existing databases and design document
 
 ## [0.10.0] - [2015-05-26]
 ### Added
