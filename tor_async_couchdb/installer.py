@@ -40,6 +40,10 @@ def _create_database(database, host, session, verify_host_ssl_cert):
     _logger.info("Creating database '%s' on '%s'", database, host)
 
     url = "%s/%s" % (host, database)
+    response = session.head(url, verify=verify_host_ssl_cert)
+    if response.status_code == httplib.OK:
+        _logger.info("Database '%s' on '%s' already exist", database, host)
+        return True
     response = session.put(url, verify=verify_host_ssl_cert)
     if response.status_code != httplib.CREATED:
         _logger.error("Failed to create database '%s' on '%s'", database, host)
@@ -69,6 +73,14 @@ def _create_design_docs(database,
     for design_doc_filename in glob.glob(design_doc_filename_pattern):
 
         design_doc_name = os.path.basename(design_doc_filename)[:-len(".json")]
+        url = "%s/%s/_design/%s" % (host, database, design_doc_name)
+
+        response = session.head(url, verify=verify_host_ssl_cert)
+        if response.status_code == httplib.OK:
+            _logger.info(
+                "Design doc '%s' already exist in database '%s' on '%s'",
+                design_doc_name, database, host)
+            continue
 
         _logger.info(
             "Creating design doc '%s' in database '%s' on '%s' from file '%s'",
@@ -80,7 +92,6 @@ def _create_design_docs(database,
         with open(design_doc_filename, "r") as design_doc_file:
             design_doc = design_doc_file.read()
 
-        url = "%s/%s/_design/%s" % (host, database, design_doc_name)
         response = session.put(
             url,
             data=design_doc,

@@ -206,16 +206,7 @@ class _AsyncCouchDBAction(AsyncAction):
         self._callback = None
 
 
-class AsyncModelRetriever(AsyncAction):
-    """Async'ly retrieve a model from the CouchDB database."""
-
-    def __init__(self, design_doc, key, async_state):
-        AsyncAction.__init__(self, async_state)
-
-        self.design_doc = design_doc
-        self.key = key
-
-        self._callback = None
+class BaseAsyncModelRetriever(AsyncAction):
 
     def fetch(self, callback):
         assert self._callback is None
@@ -245,6 +236,21 @@ class AsyncModelRetriever(AsyncAction):
             self.create_model_from_doc)
 
         acdba.fetch(self._on_acdba_fetch_done)
+
+    def get_query_string_key_value_pairs(self):
+        raise NotImplementedError()
+
+
+class AsyncModelRetriever(BaseAsyncModelRetriever):
+    """Async'ly retrieve a model from the CouchDB database."""
+
+    def __init__(self, design_doc, key, async_state):
+        AsyncAction.__init__(self, async_state)
+
+        self.design_doc = design_doc
+        self.key = key
+
+        self._callback = None
 
     def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
         assert is_conflict is False
@@ -279,33 +285,31 @@ class AsyncModelRetriever(AsyncAction):
         raise NotImplementedError()
 
 
-class AsyncModelsRetriever(AsyncAction):
+class AsyncModelsRetriever(BaseAsyncModelRetriever):
     """Async'ly retrieve a collection of models from CouchDB."""
 
     def __init__(self,
                  design_doc,
-                 async_state):
+                 start_key=None,
+                 end_key=None,
+                 async_state=None):
         AsyncAction.__init__(self, async_state)
 
         self.design_doc = design_doc
+        self.start_key = start_key
+        self.end_key = end_key
 
         self._callback = None
 
-    def fetch(self, callback):
-        assert self._callback is None
-        self._callback = callback
-
-        # :TRICKY: assumption here that design docs and views
-        # are called the same thing ie one view per design doc
-        path_fmt = '_design/%s/_view/%s?include_docs=true'
-        acdba = _AsyncCouchDBAction(
-            path_fmt % (self.design_doc, self.design_doc),
-            "GET",
-            None,           # body
-            httplib.OK,
-            self.create_model_from_doc)
-
-        acdba.fetch(self._on_acdba_fetch_done)
+    def get_query_string_key_value_pairs(self):
+        query_params = {
+            "include_docs": "true",
+        }
+        if self.start_key:
+            query_params['startkey'] = json.dumps(self.start_key)
+        if self.end_key:
+            query_params['endkey'] = json.dumps(self.end_key)
+        return query_params
 
     def create_model_from_doc(self, doc):
         raise NotImplementedError()

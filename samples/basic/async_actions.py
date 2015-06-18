@@ -33,7 +33,7 @@ class AsyncFruitsRetriever(async_model_actions.AsyncModelsRetriever):
         async_model_actions.AsyncModelsRetriever.__init__(
             self,
             "fruit_by_fruit_id",
-            async_state)
+            async_state=async_state)
 
     def create_model_from_doc(self, doc):
         return Fruit(doc=doc)

@@ -3,6 +3,12 @@ All notable changes to this project will be documented in this file.
 Format of this file follows [these](http://keepachangelog.com/) guidelines.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.11.0] - [2015-06-17]
+
+### Changed
+- aync_model_actions.AsyncModelsRetriever enable querying via start/end keys
+- installer skip pre-existing databases and design document
+
 ## [0.10.0] - [2015-05-26]
 ### Added
 - async_model_actions.AsyncDeleter enables async deletion
