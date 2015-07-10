@@ -31,7 +31,7 @@ with open("tor_async_couchdb/__init__.py", "r") as fd:
             version = match.group("version")
             break
 if not version:
-    raise Exception("Can't locate tor_async_councdb's version number")
+    raise Exception("Can't locate tor_async_couchdb's version number")
 
 setup(
     name="tor_async_couchdb",
