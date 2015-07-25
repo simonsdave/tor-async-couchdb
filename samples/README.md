@@ -35,7 +35,10 @@ to refine [retry](retry)'s retry logic using
 and an exponential backoff strategy.
 
 ##[multi-master](multi_master)
-...
+This service implements a simple RESTful service that
+builds on the [exponential backoff sample](../exp_backoff).
+Specifically, this sample illustrates how
+to implement multi-master replication and automated conflict resolution.
 
 ##[tampering](tampering)
 ...
