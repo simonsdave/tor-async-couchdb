@@ -10,8 +10,10 @@ import urllib
 
 import tornado.httputil
 import tornado.httpclient
+import tornado.ioloop
 
 import tamper
+
 
 _logger = logging.getLogger("async_actions.%s" % __name__)
 
@@ -72,6 +74,7 @@ class _AsyncCouchDBAction(AsyncAction):
                  body_as_dict,
                  expected_response_code,
                  create_model_from_doc,
+                 enable_tamper_detection=True,
                  async_state=None):
         AsyncAction.__init__(self, async_state)
 
@@ -80,6 +83,7 @@ class _AsyncCouchDBAction(AsyncAction):
         self.body_as_dict = body_as_dict
         self.expected_response_code = expected_response_code
         self.create_model_from_doc = create_model_from_doc
+        self.enable_tamper_detection = enable_tamper_detection
 
         self._callback = None
 
@@ -98,7 +102,7 @@ class _AsyncCouchDBAction(AsyncAction):
         }
 
         if self.body_as_dict is not None:
-            if tampering_signer is not None:
+            if self.enable_tamper_detection and tampering_signer:
                 tamper.sign(tampering_signer, self.body_as_dict)
             body = json.dumps(self.body_as_dict)
             headers["Content-Type"] = "application/json; charset=utf8"
@@ -176,7 +180,7 @@ class _AsyncCouchDBAction(AsyncAction):
         models = []
         for row in response_body.get("rows", []):
             doc = row.get("doc", {})
-            if tampering_signer is not None:
+            if self.enable_tamper_detection and tampering_signer:
                 if not tamper.verify(tampering_signer, doc):
                     _logger.error(
                         "tampering detected in doc '%s'",
@@ -189,8 +193,8 @@ class _AsyncCouchDBAction(AsyncAction):
         # all done! :-)
         #
         self._call_callback(
-            True,
-            False,
+            True,       # is_ok
+            False,      # is_conflict
             models,
             response_body.get("id", None),
             response_body.get("rev", None))
@@ -265,6 +269,29 @@ class AsyncModelRetriever(AsyncAction):
         when support for "most recent document" type queries was required.
         With this method here it allows derived classes to override the
         implementation and specialize the response for the new query types.
+
+        # it does get the "most recent" style queries implemented:-)
+         endkey = json.dumps([self._user.network_id, self._user.user_id])
+         startkey = json.dumps([self._user.network_id, self._user.user_id, {}])
+         return {
+             "include_docs": "true",
+             "limit": 1,
+             "descending": "true",
+             "endkey": endkey,
+             "startkey": startkey,
+         }
+
+        {
+        -   "language": "javascript",
+        -   "views": {
+        -        "member_details_by_network_id_user_id_and_created_on": {
+        -            "map": "function(doc) { if (doc.type.match(/^member_details_v\\d+.\\d+/i)) { emit([doc.network_id, doc.user_id, doc.created_on], null) } }"
+        -        }
+        -   }
+        -}
+
+        all timestamps a represented as strings with the format "YYYY-MM-DDTHH:MM:SS.MMMMMM+00:00" which is important because in this format sorting strings that are actually dates will work as you expect
+
         """
         return {
             "include_docs": "true",
@@ -282,9 +309,7 @@ class AsyncModelRetriever(AsyncAction):
 class AsyncModelsRetriever(AsyncAction):
     """Async'ly retrieve a collection of models from CouchDB."""
 
-    def __init__(self,
-                 design_doc,
-                 async_state):
+    def __init__(self, design_doc, async_state):
         AsyncAction.__init__(self, async_state)
 
         self.design_doc = design_doc
@@ -480,3 +505,99 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         assert self._callback is not None
         self._callback(is_ok, self)
         self._callback = None
+
+
+class Conflict(object):
+
+    """...
+    """
+    _conflict_resolution_periodic_callback = None
+
+    @classmethod
+    def _the_conflict_resolution_periodic_callback(cls):
+        """...
+        """
+
+        def create_model_from_doc(doc):
+            return doc
+
+        # :TODO: place some limit on # of conflicts we'll attempt
+        # to resolve in any one shot
+        acdba = _AsyncCouchDBAction(
+            "_design/conflicts/_view/conflicts?include_docs=true",
+            "GET",
+            None,                       # body
+            httplib.OK,                 # expected_response_code
+            create_model_from_doc)
+        acdba.fetch(self._on_acdba_fetch_done)
+
+    def _on_acdba_fetch_done(self, is_ok, is_conflict, conflict_docs, _id, _rev, acdba):
+        """
+            conflicts = []
+
+            for conflict in response.json()["rows"]:
+                id = conflict["id"]
+                original = get_document_by_id(host, db, id)
+                revs_in_conflict = []
+                for rev in conflict["key"]:
+                    revs_in_conflict.append(get_document_by_id(host, db, id, rev))
+                conflicts.append(Conflict(original, revs_in_conflict))
+
+            return conflicts
+
+            {
+                "offset": 0,
+                "rows": [
+                    {
+                        "doc": {
+                            "_id": "345d17dae686f2b43588108519ffe01b",
+                            "_rev": "5-c29587f1652f7eeb88594dcf7faa936a",
+                            "doc_id": "7f93a69c0af549488f8aeb31e2fdf240",
+                            "ts": "2015-05-06T13:48:42.302830"
+                        },
+                        "id": "345d17dae686f2b43588108519ffe01b",
+                        "key": [
+                            "3-b19436151bcdfe0be933ef596a3dad08"
+                        ],
+                        "value": null
+                    }
+                ],
+                "total_rows": 1
+            }
+        """
+        if not is_ok:
+            return
+
+        conflicts = []
+        for conflict_doc in conflict_docs:
+            current_id = conflict_doc["id"]
+            # for conflicting_rev in ...
+
+    @classmethod
+    def start_conflict_resolution(cls):
+        if cls._conflict_resolution_periodic_callback:
+            return False
+
+        five_minutes_in_milliseconds = 5 * 60 * 1000
+        # :TODO: <<<<<< REMOVE ME & TWO LINES BELOW >>>>>
+        five_minutes_in_milliseconds = 20 * 1000
+        # :TODO: <<<<<< REMOVE ME & TWO LINES ABOVE >>>>>
+
+        cls._conflict_resolution_periodic_callback = tornado.ioloop.PeriodicCallback(
+            cls._the_conflict_resolution_periodic_callback,
+            five_minutes_in_milliseconds)
+        cls._conflict_resolution_periodic_callback.start()
+
+        return True
+
+    @classmethod
+    def stop_conflict_resolution(cls):
+        """...
+        """
+        if not cls._conflict_resolution_periodic_callback:
+            return False
+
+        cls._conflict_resolution_periodic_callback.stop()
+        cls._conflict_resolution_periodic_callback = None
+
+        return True
