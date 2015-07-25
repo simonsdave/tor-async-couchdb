@@ -6,3 +6,4 @@ env
 .DS_Store
 .coverage
 coverage_report
+tor_async_couchdb.egg-info
