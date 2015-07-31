@@ -123,7 +123,7 @@ class Conflict(object):
 
 
 def get_conflicts(host, db):
-#revs_info=true
+    # revs_info=true
     url = "%s/%s/_design/conflicts/_view/conflicts?include_docs=true&revs=true" % (host, db)
     response = requests.get(url)
     if response.status_code != httplib.OK:

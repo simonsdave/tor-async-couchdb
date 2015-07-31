@@ -288,16 +288,21 @@ class AsyncModelRetriever(BaseAsyncModelRetriever):
          }
 
         {
-        -   "language": "javascript",
-        -   "views": {
-        -        "member_details_by_network_id_user_id_and_created_on": {
-        -            "map": "function(doc) { if (doc.type.match(/^member_details_v\\d+.\\d+/i)) { emit([doc.network_id, doc.user_id, doc.created_on], null) } }"
-        -        }
-        -   }
-        -}
+            "language": "javascript",
+            "views": {
+                "member_details_by_network_id_user_id_and_created_on": {
+                    "map": "function(doc) {
+                        if (doc.type.match(/^member_details_v\\d+.\\d+/i)) {
+                            emit([doc.network_id, doc.user_id, doc.created_on], null)
+                        }
+                    }"
+                }
+            }
+        }
 
-        all timestamps a represented as strings with the format "YYYY-MM-DDTHH:MM:SS.MMMMMM+00:00" which is important because in this format sorting strings that are actually dates will work as you expect
-
+        all timestamps a represented as strings with the format "YYYY-MM-DDTHH:MM:SS.MMMMMM+00:00"
+        which is important because in this format sorting strings that are actually dates will
+        work as you expect
         """
         return {
             "include_docs": "true",
@@ -531,8 +536,9 @@ class Conflict(object):
             None,                       # body
             httplib.OK,                 # expected_response_code
             create_model_from_doc)
-        acdba.fetch(self._on_acdba_fetch_done)
+        acdba.fetch(cls._on_acdba_fetch_done)
 
+    @classmethod
     def _on_acdba_fetch_done(self, is_ok, is_conflict, conflict_docs, _id, _rev, acdba):
         """
             conflicts = []
@@ -567,6 +573,8 @@ class Conflict(object):
                 "total_rows": 1
             }
         """
+
+        """
         if not is_ok:
             return
 
@@ -574,6 +582,8 @@ class Conflict(object):
         for conflict_doc in conflict_docs:
             current_id = conflict_doc["id"]
             # for conflicting_rev in ...
+        """
+        pass
 
     @classmethod
     def start_conflict_resolution(cls):
