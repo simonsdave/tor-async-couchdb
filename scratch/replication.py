@@ -3,6 +3,7 @@
 import datetime
 import httplib
 import json
+import sys
 import time
 import uuid
 
@@ -122,13 +123,24 @@ class Conflict(object):
 
 
 def get_conflicts(host, db):
-    url = "%s/%s/_design/conflicts/_view/conflicts" % (host, db)
+#revs_info=true
+    url = "%s/%s/_design/conflicts/_view/conflicts?include_docs=true&revs=true" % (host, db)
     response = requests.get(url)
     if response.status_code != httplib.OK:
         print "Error getting conflicts '%s':-(" % url
         return None
 
     conflicts = []
+
+    print "%" * 45
+    print "%" * 45
+    print "%" * 45
+    print url
+    print "-" * 45
+    print json.dumps(response.json(), indent=4)
+    print "%" * 45
+    print "%" * 45
+    print "%" * 45
 
     for conflict in response.json()["rows"]:
         id = conflict["id"]
@@ -278,6 +290,8 @@ def main():
     assert update_document(host, db1, get_document_by_doc_id(host, db1, doc_id))
     time.sleep(0.1)     # make sure conflict really is created
     assert update_document(host, db2, get_document_by_doc_id(host, db2, doc_id))
+    assert update_document(host, db2, get_document_by_doc_id(host, db2, doc_id))
+    assert update_document(host, db2, get_document_by_doc_id(host, db2, doc_id))
 
     assert_docs_not_equal(
         get_document_by_doc_id(host, db1, doc_id),
@@ -312,6 +326,7 @@ def main():
     assert 1 == len(conflicts)
     conflict = conflicts[0]
     print conflict.as_big_str()
+    sys.exit(0)
 
     #
     # eliminate the conflict by
