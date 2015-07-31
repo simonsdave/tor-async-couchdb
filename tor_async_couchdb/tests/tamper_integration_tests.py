@@ -98,10 +98,12 @@ class AsyncBooRetriever(async_model_actions.AsyncModelRetriever):
 
 class AsyncBoosRetriever(async_model_actions.AsyncModelsRetriever):
 
-    def __init__(self, async_state=None):
+    def __init__(self, start_key, end_key, async_state=None):
         async_model_actions.AsyncModelsRetriever.__init__(
             self,
             "boo_by_boo_id",
+            start_key,
+            end_key,
             async_state)
 
     def create_model_from_doc(self, doc):
@@ -158,7 +160,7 @@ class RequestHandler(tornado.web.RequestHandler):
                 self.set_status(httplib.OK)
                 self.finish()
 
-            absr = AsyncBoosRetriever()
+            absr = AsyncBoosRetriever(start_key=None, end_key=None)
             absr.fetch(on_fetch_done)
             return
 

@@ -161,16 +161,22 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
 class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
     """A collection of unit tests for the AsyncModelsRetriever class."""
 
+    def setUp(self):
+        self.design_doc = uuid.uuid4().hex
+        self.async_state = uuid.uuid4().hex
+        self.start_key = uuid.uuid4().hex
+        self.end_key = uuid.uuid4().hex
+        self.amr = AsyncModelsRetriever(
+            self.design_doc,
+            self.start_key,
+            self.end_key,
+            self.async_state)
+
     def test_ctr(self):
-        design_doc = uuid.uuid4().hex
-        async_state = uuid.uuid4().hex
-
-        amr = AsyncModelsRetriever(
-            design_doc,
-            async_state)
-
-        self.assertTrue(amr.design_doc is design_doc)
-        self.assertTrue(amr.async_state is async_state)
+        self.assertTrue(self.amr.design_doc is self.design_doc)
+        self.assertTrue(self.amr.start_key is self.start_key)
+        self.assertTrue(self.amr.end_key is self.end_key)
+        self.assertTrue(self.amr.async_state is self.async_state)
 
     def test_error(self):
         the_is_ok = False
@@ -178,20 +184,14 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
         the_models = None
         the_id = None
         the_rev = None
+
+        def on_the_amr_fetch_done(is_ok, models, amr):
+            self.assertEqual(is_ok, the_is_ok)
+            self.assertTrue(models is the_models)
+            self.assertTrue(amr is self.amr)
+
         with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
-            design_doc = uuid.uuid4().hex
-            async_state = uuid.uuid4().hex
-
-            the_amr = AsyncModelsRetriever(
-                design_doc,
-                async_state)
-
-            def on_the_amr_fetch_done(is_ok, models, amr):
-                self.assertEqual(is_ok, the_is_ok)
-                self.assertTrue(models is the_models)
-                self.assertTrue(amr is the_amr)
-
-            the_amr.fetch(on_the_amr_fetch_done)
+            self.amr.fetch(on_the_amr_fetch_done)
 
     def test_all_good(self):
         the_is_ok = True
@@ -199,20 +199,14 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
         the_models = [Model()]
         the_id = None
         the_rev = None
+
+        def on_the_amr_fetch_done(is_ok, models, amr):
+            self.assertEqual(is_ok, the_is_ok)
+            self.assertTrue(models is the_models)
+            self.assertTrue(amr is self.amr)
+
         with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
-            design_doc = uuid.uuid4().hex
-            async_state = uuid.uuid4().hex
-
-            the_amr = AsyncModelsRetriever(
-                design_doc,
-                async_state)
-
-            def on_the_amr_fetch_done(is_ok, models, amr):
-                self.assertEqual(is_ok, the_is_ok)
-                self.assertTrue(models is the_models)
-                self.assertTrue(amr is the_amr)
-
-            the_amr.fetch(on_the_amr_fetch_done)
+            self.amr.fetch(on_the_amr_fetch_done)
 
     def test_implementation_for_create_model_from_doc_required(self):
         """AsyncModelsRetriever is an abstract base class.
@@ -224,7 +218,7 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
         class Bad(AsyncModelsRetriever):
             pass
 
-        bad = Bad(None, None)
+        bad = Bad(None, None, None, None)
         with self.assertRaises(NotImplementedError):
             bad.create_model_from_doc({})
 
@@ -232,7 +226,7 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
             def create_model_from_doc(self, doc):
                 pass
 
-        good = Good(None, None)
+        good = Good(None, None, None, None)
         good.create_model_from_doc({})
 
 
