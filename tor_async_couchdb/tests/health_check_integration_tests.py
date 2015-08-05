@@ -8,6 +8,7 @@ Be warned - this test suite feels complicated.
 import httplib
 import uuid
 
+import nose.plugins.attrib
 import requests
 import tornado.testing
 import tornado.web
@@ -114,6 +115,7 @@ class RequestHandler(tornado.web.RequestHandler):
         ahc.check(on_check_done)
 
 
+@nose.plugins.attrib.attr('integration')
 class HealthCheckIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
 
     def get_app(self):

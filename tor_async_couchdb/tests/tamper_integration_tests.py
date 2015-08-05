@@ -14,6 +14,7 @@ import uuid
 
 from keyczar import keyczar
 from keyczar import keyczart
+import nose.plugins.attrib
 import requests
 import tornado.testing
 import tornado.web
@@ -176,6 +177,7 @@ class RequestHandler(tornado.web.RequestHandler):
         }
 
 
+@nose.plugins.attrib.attr('integration')
 class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
 
     @classmethod
