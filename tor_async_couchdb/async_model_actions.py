@@ -64,8 +64,7 @@ class _AsyncCouchDBAction(object):
                  method,
                  body_as_dict,
                  expected_response_code,
-                 create_model_from_doc,
-                 enable_tamper_detection=True):
+                 create_model_from_doc):
         object.__init__(self)
 
         self.path = path
@@ -73,7 +72,6 @@ class _AsyncCouchDBAction(object):
         self.body_as_dict = body_as_dict
         self.expected_response_code = expected_response_code
         self.create_model_from_doc = create_model_from_doc
-        self.enable_tamper_detection = enable_tamper_detection
 
         self._callback = None
 
@@ -92,7 +90,7 @@ class _AsyncCouchDBAction(object):
         }
 
         if self.body_as_dict is not None:
-            if self.enable_tamper_detection and tampering_signer:
+            if tampering_signer:
                 tamper.sign(tampering_signer, self.body_as_dict)
             body = json.dumps(self.body_as_dict)
             headers["Content-Type"] = "application/json; charset=utf8"
@@ -170,7 +168,7 @@ class _AsyncCouchDBAction(object):
         models = []
         for row in response_body.get("rows", []):
             doc = row.get("doc", {})
-            if self.enable_tamper_detection and tampering_signer:
+            if tampering_signer:
                 if not tamper.verify(tampering_signer, doc):
                     _logger.error(
                         "tampering detected in doc '%s'",
