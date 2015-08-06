@@ -51,16 +51,7 @@ _doc_type_reg_ex = re.compile(
     re.IGNORECASE)
 
 
-class AsyncAction(object):
-    """Abstract base class for all async actions."""
-
-    def __init__(self, async_state):
-        object.__init__(self)
-
-        self.async_state = async_state
-
-
-class _AsyncCouchDBAction(AsyncAction):
+class _AsyncCouchDBAction(object):
     """```_AsyncCouchDBAction``` used to be an abstract base
     class for all async interactions with the user store. However
     when it came time to unit tests derived classes it was really
@@ -74,9 +65,8 @@ class _AsyncCouchDBAction(AsyncAction):
                  body_as_dict,
                  expected_response_code,
                  create_model_from_doc,
-                 enable_tamper_detection=True,
-                 async_state=None):
-        AsyncAction.__init__(self, async_state)
+                 enable_tamper_detection=True):
+        object.__init__(self)
 
         self.path = path
         self.method = method
@@ -208,6 +198,15 @@ class _AsyncCouchDBAction(AsyncAction):
         assert self._callback is not None
         self._callback(is_ok, is_conflict, models, _id, _rev, self)
         self._callback = None
+
+
+class AsyncAction(object):
+    """Abstract base class for all async actions."""
+
+    def __init__(self, async_state):
+        object.__init__(self)
+
+        self.async_state = async_state
 
 
 class BaseAsyncModelRetriever(AsyncAction):
