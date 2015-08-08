@@ -51,63 +51,64 @@ _doc_type_reg_ex = re.compile(
     re.IGNORECASE)
 
 
-class _AsyncCouchDBAction(object):
-    """```_AsyncCouchDBAction``` used to be an abstract base
-    class for all async interactions with the user store. However
-    when it came time to unit tests derived classes it was really
-    obvious that it was better to use composition rather than
-    implemntation inheritance.
+class CouchDBAsyncHTTPRequest(tornado.httpclient.HTTPRequest):
+    """```CouchDBAsyncHTTPRequest``` extends ```tornado.httpclient.HTTPRequest```
+    adding ...
     """
 
-    def __init__(self,
-                 path,
-                 method,
-                 body_as_dict,
-                 expected_response_code,
-                 create_model_from_doc):
+    def __init__(self, path, method, body_as_dict):
         object.__init__(self)
 
-        self.path = path
-        self.method = method
-        self.body_as_dict = body_as_dict
-        self.expected_response_code = expected_response_code
-        self.create_model_from_doc = create_model_from_doc
-
-        self._callback = None
-
-    def fetch(self, callback):
-        """fetch() is perhaps not the best name but it matches
-        the key method in the async HTTP client classs:-).
-        """
-        assert self._callback is None
-        self._callback = callback
-
-        url = "%s/%s" % (database, self.path)
+        url = "%s/%s" % (database, path)
 
         headers = {
             "Accept": "application/json",
             "Accept-Encoding": "charset=utf8",
         }
 
-        if self.body_as_dict is not None:
+        if body_as_dict is not None:
             if tampering_signer:
-                tamper.sign(tampering_signer, self.body_as_dict)
-            body = json.dumps(self.body_as_dict)
+                tamper.sign(tampering_signer, body_as_dict)
+            body = json.dumps(body_as_dict)
             headers["Content-Type"] = "application/json; charset=utf8"
         else:
             body = None
 
         auth_mode = "basic" if username or password else None
 
-        request = tornado.httpclient.HTTPRequest(
+        tornado.httpclient.HTTPRequest.__init__(
+            self,
             url,
-            method=self.method,
+            method=method,
             body=body,
             headers=tornado.httputil.HTTPHeaders(headers),
             validate_cert=validate_cert,
             auth_mode=auth_mode,
             auth_username=username,
             auth_password=password)
+
+
+class CouchDBAsyncHTTPClient(object):
+    """```CouchDBAsyncHTTPClient``` wraps
+    ```tornado.httpclient.AsyncHTTPClient``` by adding standardized
+    logging of error messages and calculating LCP response times
+    for subsequent use in performance analysis and health monitoring.
+    """
+
+    def __init__(self, expected_response_code, create_model_from_doc):
+        object.__init__(self)
+
+        self.expected_response_code = expected_response_code
+        self.create_model_from_doc = create_model_from_doc
+
+        self._callback = None
+
+    def fetch(self, request, callback):
+        """fetch() is perhaps not the best name but it matches
+        the key method in the async HTTP client classs:-).
+        """
+        assert self._callback is None
+        self._callback = callback
 
         http_client = tornado.httpclient.AsyncHTTPClient()
         http_client.fetch(
@@ -229,16 +230,22 @@ class BaseAsyncModelRetriever(AsyncAction):
         # ie one view per design doc
         path = path_fmt % (self.design_doc, self.design_doc, query_string)
 
-        acdba = _AsyncCouchDBAction(
-            path,
-            "GET",
-            None,           # body
-            httplib.OK,
-            self.create_model_from_doc)
+        request = CouchDBAsyncHTTPRequest(path, "GET", None)
 
-        acdba.fetch(self._on_acdba_fetch_done)
+        cac = CouchDBAsyncHTTPClient(httplib.OK, self.create_model_from_doc)
+        cac.fetch(request, self.on_cac_fetch_done)
 
     def get_query_string_key_value_pairs(self):
+        raise NotImplementedError()
+
+    def on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
+        raise NotImplementedError()
+
+    def create_model_from_doc(self, doc):
+        """Concrete classes derived from this class must implement
+        this method which takes a dictionary (```doc```) and creates
+        a model instance.
+        """
         raise NotImplementedError()
 
 
@@ -253,7 +260,7 @@ class AsyncModelRetriever(BaseAsyncModelRetriever):
 
         self._callback = None
 
-    def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
+    def on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
         assert is_conflict is False
         model = models[0] if models else None
         self._call_callback(is_ok, model)
@@ -306,13 +313,6 @@ class AsyncModelRetriever(BaseAsyncModelRetriever):
             "key": json.dumps(self.key),
         }
 
-    def create_model_from_doc(self, doc):
-        """Concrete classes derived from this class must implement
-        this method which takes a dictionary (```doc```) and creates
-        a model instance.
-        """
-        raise NotImplementedError()
-
 
 class AsyncModelsRetriever(BaseAsyncModelRetriever):
     """Async'ly retrieve a collection of models from CouchDB."""
@@ -336,9 +336,6 @@ class AsyncModelsRetriever(BaseAsyncModelRetriever):
             query_params['endkey'] = json.dumps(self.end_key)
         return query_params
 
-    def create_model_from_doc(self, doc):
-        raise NotImplementedError()
-
     def transform_models(self, models):
         """By default the ```callback``` in ```fetch``` will recieve
         a list of models. Sometimes is useful to do a transformation
@@ -357,7 +354,7 @@ class AsyncModelsRetriever(BaseAsyncModelRetriever):
         """
         return models
 
-    def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
+    def on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
         assert is_conflict is False
         self._call_callback(is_ok, models)
 
@@ -414,15 +411,12 @@ class AsyncPersister(AsyncAction):
             path = ""
             method = "POST"
 
-        acdba = _AsyncCouchDBAction(
-            path,
-            method,
-            model_as_doc_for_store,
-            httplib.CREATED,
-            None)           # create_model_from_doc
-        acdba.fetch(self._on_acdba_fetch_done)
+        request = CouchDBAsyncHTTPRequest(path, method, model_as_doc_for_store)
 
-    def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
+        cac = CouchDBAsyncHTTPClient(httplib.CREATED, None)
+        cac.fetch(request, self._on_cac_fetch_done)
+
+    def _on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
         """```self.model``` has just been written to a CouchDB database which
         means ```self.model```'s _id and _rev properties might be out of
         sync with the _id and _rev properties in CouchDB since CouchDB
@@ -463,16 +457,14 @@ class AsyncDeleter(AsyncAction):
             self._call_callback(False, False)
             return
 
-        def on_acdba_fetch_done(is_ok, is_conflict, models, _id, _rev, acdba):
-            self._call_callback(is_ok, is_conflict)
+        path = "%s?rev=%s" % (self.model._id, self.model._rev),
+        request = CouchDBAsyncHTTPRequest(path, "DELETE", None)
 
-        acdba = _AsyncCouchDBAction(
-            "%s?rev=%s" % (self.model._id, self.model._rev),
-            "DELETE",
-            None,           # body
-            httplib.OK,
-            None)           # create_model_from_doc
-        acdba.fetch(on_acdba_fetch_done)
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_fetch_done)
+
+    def _on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
+        self._call_callback(is_ok, is_conflict)
 
     def _call_callback(self, is_ok, is_conflict):
         assert self._callback is not None
@@ -493,15 +485,12 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         assert not self._callback
         self._callback = callback
 
-        acdba = _AsyncCouchDBAction(
-            "",             # path
-            "GET",
-            None,           # body
-            httplib.OK,
-            None)           # create_model_from_doc
-        acdba.fetch(self._on_acdba_fetch_done)
+        request = CouchDBAsyncHTTPRequest("", "GET", None)
 
-    def _on_acdba_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_fetch_done)
+
+    def _on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
         assert is_conflict is False
         self._call_callback(is_ok)
 
@@ -533,10 +522,10 @@ class Conflict(object):
             None,                       # body
             httplib.OK,                 # expected_response_code
             create_model_from_doc)
-        acdba.fetch(cls._on_acdba_fetch_done)
+        acdba.fetch(cls._on_cac_fetch_done)
 
     @classmethod
-    def _on_acdba_fetch_done(self, is_ok, is_conflict, conflict_docs, _id, _rev, acdba):
+    def _on_cac_fetch_done(self, is_ok, is_conflict, conflict_docs, _id, _rev, acdba):
         """
             conflicts = []
 

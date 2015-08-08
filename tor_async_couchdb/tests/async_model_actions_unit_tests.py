@@ -1,10 +1,12 @@
 """This module implements a collection of unit tests for
-the async_model_actions.py module."""
+the async_model_actions.py module.
+"""
 
 import mock
 import unittest
 import uuid
 
+from ..async_model_actions import BaseAsyncModelRetriever
 from ..async_model_actions import AsyncDeleter
 from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
@@ -31,15 +33,15 @@ class MyModelWithBadType(Model):
         return rv
 
 
-class AsyncCouchDBActionPatcher(object):
+class CouchDBAsyncHTTPClientPatcher(object):
 
     def __init__(self, is_ok, is_conflict, models, _id, _rev):
 
-        def fetch_patch(ausa, callback):
-            callback(is_ok, is_conflict, models, _id, _rev, ausa)
+        def fetch_patch(cac, request, callback):
+            callback(is_ok, is_conflict, models, _id, _rev, cac)
 
         self._patcher = mock.patch(
-            __name__ + ".async_model_actions._AsyncCouchDBAction.fetch",
+            __name__ + ".async_model_actions.CouchDBAsyncHTTPClient.fetch",
             fetch_patch)
 
     def __enter__(self):
@@ -48,6 +50,73 @@ class AsyncCouchDBActionPatcher(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._patcher.stop()
+
+
+class BaseAsyncModelRetrieverUnitTaseCase(unittest.TestCase):
+    """A collection of unit tests for the BaseAsyncModelRetriever class."""
+
+    def test_implementation_for_get_query_string_key_value_pairs_required(self):
+        """BaseAsyncModelRetriever is an abstract base class.
+        Concrete derived classes must provide an implementation
+        of get_query_string_key_value_pairs() otherwise an exception is
+        raised. This test verifies the exception is raised
+        when an implementation is not provided."""
+
+        class Bad(BaseAsyncModelRetriever):
+            pass
+
+        bad = Bad(None)
+        with self.assertRaises(NotImplementedError):
+            bad.get_query_string_key_value_pairs()
+
+        class Good(Bad):
+            def get_query_string_key_value_pairs(self):
+                pass
+
+        good = Good(None)
+        good.get_query_string_key_value_pairs()
+
+    def test_implementation_for_create_model_from_doc_required(self):
+        """BaseAsyncModelRetriever is an abstract base class.
+        Concrete derived classes must provide an implementation
+        of create_model_from_doc() otherwise an exception is
+        raised. This test verifies the exception is raised
+        when an implementation is not provided."""
+
+        class Bad(BaseAsyncModelRetriever):
+            pass
+
+        bad = Bad(None)
+        with self.assertRaises(NotImplementedError):
+            bad.create_model_from_doc({})
+
+        class Good(Bad):
+            def create_model_from_doc(self, doc):
+                pass
+
+        good = Good(None)
+        good.create_model_from_doc({})
+
+    def test_implementation_for_on_cac_fetch_done_required(self):
+        """BaseAsyncModelRetriever is an abstract base class.
+        Concrete derived classes must provide an implementation
+        of on_cac_fetch_done() otherwise an exception is
+        raised. This test verifies the exception is raised
+        when an implementation is not provided."""
+
+        class Bad(BaseAsyncModelRetriever):
+            pass
+
+        bad = Bad(None)
+        with self.assertRaises(NotImplementedError):
+            bad.on_cac_fetch_done(None, None, None, None, None, None)
+
+        class Good(Bad):
+            def on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
+                pass
+
+        good = Good(None)
+        good.on_cac_fetch_done(None, None, None, None, None, None)
 
 
 class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
@@ -73,7 +142,7 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
         the_models = None
         the_id = None
         the_rev = None
-        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             design_doc = uuid.uuid4().hex
             key = uuid.uuid4().hex
             async_state = uuid.uuid4().hex
@@ -96,7 +165,7 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
         the_models = []
         the_id = None
         the_rev = None
-        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             design_doc = uuid.uuid4().hex
             key = uuid.uuid4().hex
             async_state = uuid.uuid4().hex
@@ -119,7 +188,7 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
         the_models = [Model()]
         the_id = None
         the_rev = None
-        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             design_doc = uuid.uuid4().hex
             key = uuid.uuid4().hex
             async_state = uuid.uuid4().hex
@@ -135,27 +204,6 @@ class AsyncModelRetrieverUnitTaseCase(unittest.TestCase):
                 self.assertTrue(amr is the_amr)
 
             the_amr.fetch(on_the_amr_fetch_done)
-
-    def test_implementation_for_create_model_from_doc_required(self):
-        """AsyncModelRetriever is an abstract base class.
-        Concrete derived classes must provide an implementation
-        of create_model_from_doc() otherwise an exception is
-        raised. This test verifies the exception is raised
-        when an implementation is not provided."""
-
-        class Bad(AsyncModelRetriever):
-            pass
-
-        bad = Bad(None, None, None)
-        with self.assertRaises(NotImplementedError):
-            bad.create_model_from_doc({})
-
-        class Good(Bad):
-            def create_model_from_doc(self, doc):
-                pass
-
-        good = Good(None, None, None)
-        good.create_model_from_doc({})
 
 
 class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
@@ -190,7 +238,7 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
             self.assertTrue(models is the_models)
             self.assertTrue(amr is self.amr)
 
-        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             self.amr.fetch(on_the_amr_fetch_done)
 
     def test_all_good(self):
@@ -205,7 +253,7 @@ class AsyncModelsRetrieverUnitTaseCase(unittest.TestCase):
             self.assertTrue(models is the_models)
             self.assertTrue(amr is self.amr)
 
-        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             self.amr.fetch(on_the_amr_fetch_done)
 
     def test_implementation_for_create_model_from_doc_required(self):
@@ -259,7 +307,7 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
         self.assertIsNone(the_model._rev)
         self.assertNotEqual(the_model._rev, the_rev)
 
-        with AsyncCouchDBActionPatcher(True, False, [], the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(True, False, [], the_id, the_rev):
             callback = mock.Mock()
             the_ap.persist(callback)
             callback.assert_called_once_with(True, False, the_ap)
@@ -287,7 +335,7 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
         self.assertIsNotNone(the_model._rev)
         self.assertNotEqual(the_model._rev, the_next_rev)
 
-        with AsyncCouchDBActionPatcher(True, False, [], the_model._id, the_next_rev):
+        with CouchDBAsyncHTTPClientPatcher(True, False, [], the_model._id, the_next_rev):
             callback = mock.Mock()
             the_ap.persist(callback)
             callback.assert_called_once_with(True, False, the_ap)
@@ -302,7 +350,7 @@ class AsyncPersisterUnitTaseCase(unittest.TestCase):
         the_id = uuid.uuid4().hex
         the_rev = uuid.uuid4().hex
 
-        with AsyncCouchDBActionPatcher(True, False, [], the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(True, False, [], the_id, the_rev):
             callback = mock.Mock()
             with self.assertRaises(InvalidTypeInDocForStoreException):
                 the_ap.persist(callback)
@@ -362,11 +410,11 @@ class AsyncDeleterUnitTaseCase(unittest.TestCase):
         model._rev = uuid.uuid4().hex
 
         ad = AsyncDeleter(model)
-        with AsyncCouchDBActionPatcher(False,   # is_ok
-                                       True,    # is_conflict
-                                       None,    # models
-                                       None,    # _id
-                                       None):   # _rev
+        with CouchDBAsyncHTTPClientPatcher(False,   # is_ok
+                                           True,    # is_conflict
+                                           None,    # models
+                                           None,    # _id
+                                           None):   # _rev
             callback = mock.Mock()
             ad.delete(callback)
             callback.assert_called_once_with(False, True, ad)
@@ -377,11 +425,11 @@ class AsyncDeleterUnitTaseCase(unittest.TestCase):
         model._rev = uuid.uuid4().hex
 
         ad = AsyncDeleter(model)
-        with AsyncCouchDBActionPatcher(False,   # is_ok
-                                       False,   # is_conflict
-                                       None,    # models
-                                       None,    # _id
-                                       None):   # _rev
+        with CouchDBAsyncHTTPClientPatcher(False,   # is_ok
+                                           False,   # is_conflict
+                                           None,    # models
+                                           None,    # _id
+                                           None):   # _rev
             callback = mock.Mock()
             ad.delete(callback)
             callback.assert_called_once_with(False, False, ad)
@@ -392,11 +440,11 @@ class AsyncDeleterUnitTaseCase(unittest.TestCase):
         model._rev = uuid.uuid4().hex
 
         ad = AsyncDeleter(model)
-        with AsyncCouchDBActionPatcher(True,    # is_ok
-                                       False,   # is_conflict
-                                       None,    # models
-                                       None,    # _id
-                                       None):   # _rev
+        with CouchDBAsyncHTTPClientPatcher(True,    # is_ok
+                                           False,   # is_conflict
+                                           None,    # models
+                                           None,    # _id
+                                           None):   # _rev
             callback = mock.Mock()
             ad.delete(callback)
             callback.assert_called_once_with(True, False, ad)
@@ -423,7 +471,7 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
         the_models = []
         the_id = None
         the_rev = None
-        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             the_aushc = AsyncCouchDBHealthCheck()
 
             def callback(is_ok, aushc):
@@ -438,7 +486,7 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
         the_models = []
         the_id = None
         the_rev = None
-        with AsyncCouchDBActionPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             the_aushc = AsyncCouchDBHealthCheck()
 
             def callback(is_ok, aushc):
