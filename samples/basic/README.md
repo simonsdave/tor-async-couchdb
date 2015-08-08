@@ -95,7 +95,8 @@ concurrent requests.
 
 ##Read
 ```bash
->curl -s http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | python -m json.tool{
+>curl -s http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | python -m json.tool
+{
     "_id": "345d17dae686f2b435881085198afc39",
     "_rev": "1-9e08c14213bb8b4386eea863de966d9e",
     "created_on": "2015-04-22T11:58:41.347308+00:00",
@@ -131,7 +132,10 @@ concurrent requests.
 
 ##Delete
 ```bash
->curl -s -X DELETE http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179
+>curl -s  -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179
+200
+>curl -s  -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179
+404
 >
 ```
 
@@ -146,5 +150,5 @@ concurrent requests.
 
 # Service's Data Model
 ```bash
-curl http://127.0.0.1:5984/tor_async_couchdb_basic_sample/_design/boo_by_boo_id/_view/boo_by_boo_id?include_docs=true
+curl http://127.0.0.1:5984/tor_async_couchdb_sample/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?include_docs=true
 ```

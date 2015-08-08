@@ -8,10 +8,10 @@ requests to a sample service which is assumed to be runing on
 [http://127.0.0.1:8445](http://127.0.0.1:8445). When [locustfile.py](locustfile.py)
 is loaded by [locust](http://locust.io/) it first issues a number
 of ```POST``` requests to create a collection of fruit resources which are then
-the target of ```GET``` and ```PUT``` requests [locust](http://locust.io/).
+the target of ```GET``` and ```PUT``` requests.
 
 There are a few parameters
-which can be tweak to control the shape and intensity of the generated traffic.
+which can be tweaked to control the shape and intensity of the generated traffic.
 
 * total number of requests and number of concurrent requests
 are configured in [loadgen.sh](loadgen.sh) - look for the
@@ -20,8 +20,8 @@ command line args
 * the relative number of ```GET``` and ```PUT``` requests is controlled
 by the ```_weight_get``` and ```_weight_put``` variables in
 [locustfile.py](locustfile.py)
-* the number of fruits initial created is defined by ```_number_fruits```
-in [locustfile.py](locustfile.py)
+* the number of fruits (model instances) initial created is defined
+by ```_number_fruits``` in [locustfile.py](locustfile.py)
 
 Note - this should be obvious but in case not ...
 the loadgen utility is designed to exercise ```tor-async-couchdb```'s

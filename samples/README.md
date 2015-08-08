@@ -40,11 +40,11 @@ builds on the [exponential backoff sample](../exp_backoff).
 Specifically, this sample illustrates how
 to implement multi-master replication and automated conflict resolution.
 
-##[tampering](tampering)
-...
+##tampering
+WIP
 
-##[hash and encrypt](hash_and_encrypt)
-...
+##hash and encrypt
+WIP
 
 #Utilities
 
