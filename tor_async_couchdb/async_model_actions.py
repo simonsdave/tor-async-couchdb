@@ -236,41 +236,6 @@ class BaseAsyncModelRetriever(AsyncAction):
         cac.fetch(request, self.on_cac_fetch_done)
 
     def get_query_string_key_value_pairs(self):
-        raise NotImplementedError()
-
-    def on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
-        raise NotImplementedError()
-
-    def create_model_from_doc(self, doc):
-        """Concrete classes derived from this class must implement
-        this method which takes a dictionary (```doc```) and creates
-        a model instance.
-        """
-        raise NotImplementedError()
-
-
-class AsyncModelRetriever(BaseAsyncModelRetriever):
-    """Async'ly retrieve a model from the CouchDB database."""
-
-    def __init__(self, design_doc, key, async_state):
-        AsyncAction.__init__(self, async_state)
-
-        self.design_doc = design_doc
-        self.key = key
-
-        self._callback = None
-
-    def on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
-        assert is_conflict is False
-        model = models[0] if models else None
-        self._call_callback(is_ok, model)
-
-    def _call_callback(self, is_ok, model=None):
-        assert self._callback
-        self._callback(is_ok, model, self)
-        self._callback = None
-
-    def get_query_string_key_value_pairs(self):
         """This method is only called by ```fetch()``` to get the key value
         pairs that will be used to construct the query string in the request
         to CouchDB.
@@ -308,10 +273,45 @@ class AsyncModelRetriever(BaseAsyncModelRetriever):
         which is important because in this format sorting strings that are actually dates will
         work as you expect
         """
+        raise NotImplementedError()
+
+    def on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
+        raise NotImplementedError()
+
+    def create_model_from_doc(self, doc):
+        """Concrete classes derived from this class must implement
+        this method which takes a dictionary (```doc```) and creates
+        a model instance.
+        """
+        raise NotImplementedError()
+
+
+class AsyncModelRetriever(BaseAsyncModelRetriever):
+    """Async'ly retrieve a model from the CouchDB database."""
+
+    def __init__(self, design_doc, key, async_state):
+        AsyncAction.__init__(self, async_state)
+
+        self.design_doc = design_doc
+        self.key = key
+
+        self._callback = None
+
+    def get_query_string_key_value_pairs(self):
         return {
             "include_docs": "true",
             "key": json.dumps(self.key),
         }
+
+    def on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, cac):
+        assert is_conflict is False
+        model = models[0] if models else None
+        self._call_callback(is_ok, model)
+
+    def _call_callback(self, is_ok, model=None):
+        assert self._callback
+        self._callback(is_ok, model, self)
+        self._callback = None
 
 
 class AsyncModelsRetriever(BaseAsyncModelRetriever):
