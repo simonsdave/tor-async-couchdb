@@ -457,7 +457,7 @@ class AsyncDeleter(AsyncAction):
             self._call_callback(False, False)
             return
 
-        path = "%s?rev=%s" % (self.model._id, self.model._rev),
+        path = "%s?rev=%s" % (self.model._id, self.model._rev)
         request = CouchDBAsyncHTTPRequest(path, "DELETE", None)
 
         cac = CouchDBAsyncHTTPClient(httplib.OK, None)
