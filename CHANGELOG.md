@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 Format of this file follows [these](http://keepachangelog.com/) guidelines.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.12.0] - [2015-xx-xx]
+
+### Changed
+- ton of async_model_actions.py refactoring
+- material improvement in samples
+- added AsyncCouchDBHealthCheck integration tests
+
 ## [0.11.0] - [2015-06-17]
 
 ### Changed
