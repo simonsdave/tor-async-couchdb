@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - ton of async_model_actions.py refactoring
 - material improvement in samples
 - added AsyncCouchDBHealthCheck integration tests
+- all samples now use ```tornado.curl_httpclient.CurlAsyncHTTPClient``` - see
+[this](http://tornado.readthedocs.org/en/latest/httpclient.html) for a quick
+explaination of why ```curl_httpclient``` is used instead of ```simple_httpclient```
 
 ## [0.11.0] - [2015-06-17]
 

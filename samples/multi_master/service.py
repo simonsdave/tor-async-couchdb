@@ -201,6 +201,9 @@ if __name__ == "__main__":
         ),
     ]
 
+    client = "tornado.curl_httpclient.CurlAsyncHTTPClient"
+    tornado.httpclient.AsyncHTTPClient.configure(client)
+
     settings = {
     }
 
