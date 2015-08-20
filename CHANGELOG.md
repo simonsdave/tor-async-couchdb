@@ -12,6 +12,18 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - all samples now use ```tornado.curl_httpclient.CurlAsyncHTTPClient``` - see
 [this](http://tornado.readthedocs.org/en/latest/httpclient.html) for a quick
 explaination of why ```curl_httpclient``` is used instead of ```simple_httpclient```
+- if available, detailed timing info describing phases of the interaction
+with CouchDB now generates an info level log - see
+[this](http://tornado.readthedocs.org/en/latest/httpclient.html#response-objects)
+Tornado info and [this](http://curl.haxx.se/libcurl/c/curl_easy_getinfo.html#TIMES)
+libcurl info for a description of the timing details. the log message will look
+something like:
+
+```
+2015-08-20T11:52:46.335+00:00 INFO async_model_actions CouchDB took 17.26 ms
+to respond with 200 to 'GET' against >>>http://127.0.0.1:5984/tor_async_couchdb_sample/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?key=%222c794f79e43f4c2093d0fb7057ef978e%22&include_docs=true<<< -
+timing detail: q=12.06 ms n=0.01 ms c=0.02 ms p=0.04 ms s=16.81 ms t=16.96 ms r=0.00 ms
+```
 
 ## [0.11.0] - [2015-06-17]
 

@@ -118,18 +118,45 @@ class CouchDBAsyncHTTPClient(object):
     def _on_http_client_fetch_done(self, response):
         #
         # write a message to the log which can be easily parsed
-        # by performance analysis tools
+        # by performance analysis tools and used to understand
+        # performance bottlenecks.
+        #
+        # http://tornado.readthedocs.org/en/latest/httpclient.html#response-objects
+        # explains that the time_info attribute of a tornado response
+        # object contains timing details of the phases of a request which
+        # is available when using the cURL http client. a description
+        # of these timing details can be found at
+        # http://curl.haxx.se/libcurl/c/curl_easy_getinfo.html#TIMES
         #
         fmt = (
-            "CouchDB took %d ms to respond with %d to '%s' "
-            "against >>>%s<<<"
+            "CouchDB took {request_time:.2f} ms to respond "
+            "with {http_response_code:d} to '{http_method}' "
+            "against >>>{url}<<< - timing detail: "
+            "q={queue:.2f} ms n={namelookup:.2f} ms "
+            "c={connect:.2f} ms p={pretransfer:.2f} ms "
+            "s={starttransfer:.2f} ms t={total:.2f} ms r={redirect:.2f} ms"
         )
-        _logger.info(
-            fmt,
-            response.request_time * 1000,
-            response.code,
-            response.request.method,
-            response.effective_url)
+        msg_format_args = {
+            "request_time": response.request_time * 1000,
+            "http_response_code": response.code,
+            "http_method": response.request.method,
+            "url": response.effective_url,
+        }
+
+        def add_time_info_to_msg_format_args(key):
+            msg_format_args[key] = response.time_info.get(key, 0) * 1000
+
+        add_time_info_to_msg_format_args("queue")
+        add_time_info_to_msg_format_args("namelookup")
+        add_time_info_to_msg_format_args("connect")
+        add_time_info_to_msg_format_args("pretransfer")
+        add_time_info_to_msg_format_args("starttransfer")
+        add_time_info_to_msg_format_args("total")
+        add_time_info_to_msg_format_args("redirect")
+
+        msg = fmt.format(**msg_format_args)
+
+        _logger.info(msg)
 
         #
         # check for errors ...

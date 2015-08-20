@@ -2,9 +2,11 @@
 the async_model_actions.py module.
 """
 
-import mock
+import httplib
 import unittest
 import uuid
+
+import mock
 
 from ..async_model_actions import BaseAsyncModelRetriever
 from ..async_model_actions import AsyncDeleter
@@ -12,6 +14,7 @@ from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
 from ..async_model_actions import AsyncCouchDBHealthCheck
+from ..async_model_actions import CouchDBAsyncHTTPClient
 from ..async_model_actions import InvalidTypeInDocForStoreException
 from ..model import Model
 from .. import async_model_actions  # noqa, needed for patching using relative path
@@ -50,6 +53,121 @@ class CouchDBAsyncHTTPClientPatcher(object):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._patcher.stop()
+
+
+class CouchDBAsyncHTTPClientTestCase(unittest.TestCase):
+    """A collection of unit tests for the CouchDBAsyncHTTPClient class."""
+
+    def test_ctr(self):
+        the_expected_response_code = uuid.uuid4().hex
+        the_create_model_from_doc = uuid.uuid4().hex
+
+        ac = CouchDBAsyncHTTPClient(
+            the_expected_response_code,
+            the_create_model_from_doc)
+
+        self.assertEqual(
+            ac.expected_response_code,
+            the_expected_response_code)
+
+        self.assertEqual(
+            ac.create_model_from_doc,
+            the_create_model_from_doc)
+
+    def test_happy_path_with_no_time_info(self):
+        response = mock.Mock()
+        response.code = httplib.OK
+        response.error = None
+        response.body = None
+        response.time_info = {}
+        response.effective_url = "http://www.example.com/%s" % uuid.uuid4().hex
+        response.request_time = 0.99
+        response.request = mock.Mock()
+        response.request.method = "GET"
+
+        def fetch_patch(request, callback):
+            callback(response)
+
+        with mock.patch("tornado.httpclient.AsyncHTTPClient.fetch", side_effect=fetch_patch):
+            the_ac = CouchDBAsyncHTTPClient(response.code, None)
+
+            with mock.patch(__name__ + '.async_model_actions._logger') as logger_patch:
+                callback = mock.Mock()
+                the_ac.fetch(response.request, callback)
+                self.assertTrue(callback.called_once_with(True, False, [], None, None, the_ac))
+
+                self.assertEqual(
+                    logger_patch.error.call_args_list,
+                    [])
+
+                expected_info_message_fmt = (
+                    "CouchDB took %.2f ms to respond with "
+                    "%d to '%s' against >>>%s<<< - "
+                    "timing detail: q=0.00 ms n=0.00 ms c=0.00 ms p=0.00 ms s=0.00 ms t=0.00 ms r=0.00 ms"
+                )
+                expected_info_message = expected_info_message_fmt % (
+                    response.request_time * 1000,
+                    response.code,
+                    response.request.method,
+                    response.effective_url)
+                self.assertEqual(
+                    logger_patch.info.call_args_list,
+                    [mock.call(expected_info_message)])
+
+    def test_happy_path_with_time_info(self):
+        response = mock.Mock()
+        response.code = httplib.OK
+        response.error = None
+        response.body = None
+        response.time_info = {
+            "queue": 1,
+            "namelookup": 2,
+            "connect": 3,
+            "pretransfer": 4,
+            "starttransfer": 5,
+            "total": 6,
+            "redirect": 7,
+        }
+        response.effective_url = "http://www.example.com/%s" % uuid.uuid4().hex
+        response.request_time = 0.99
+        response.request = mock.Mock()
+        response.request.method = "GET"
+
+        def fetch_patch(request, callback):
+            callback(response)
+
+        with mock.patch("tornado.httpclient.AsyncHTTPClient.fetch", side_effect=fetch_patch):
+            the_ac = CouchDBAsyncHTTPClient(response.code, None)
+
+            with mock.patch(__name__ + '.async_model_actions._logger') as logger_patch:
+                callback = mock.Mock()
+                the_ac.fetch(response.request, callback)
+                self.assertTrue(callback.called_once_with(True, False, [], None, None, the_ac))
+
+                self.assertEqual(
+                    logger_patch.error.call_args_list,
+                    [])
+
+                expected_info_message_fmt = (
+                    "CouchDB took %.2f ms to respond with "
+                    "%d to '%s' against >>>%s<<< - "
+                    "timing detail: q=%.2f ms n=%.2f ms c=%.2f ms p=%.2f ms s=%.2f ms t=%.2f ms r=%.2f ms"
+                )
+                expected_info_message = expected_info_message_fmt % (
+                    response.request_time * 1000,
+                    response.code,
+                    response.request.method,
+                    response.effective_url,
+                    response.time_info["queue"] * 1000,
+                    response.time_info["namelookup"] * 1000,
+                    response.time_info["connect"] * 1000,
+                    response.time_info["pretransfer"] * 1000,
+                    response.time_info["starttransfer"] * 1000,
+                    response.time_info["total"] * 1000,
+                    response.time_info["redirect"] * 1000)
+                self.assertEqual(
+                    logger_patch.info.call_args_list,
+                    [mock.call(expected_info_message)])
 
 
 class BaseAsyncModelRetrieverUnitTaseCase(unittest.TestCase):
