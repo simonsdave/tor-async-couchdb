@@ -59,6 +59,8 @@ class CouchDBAsyncHTTPRequest(tornado.httpclient.HTTPRequest):
     def __init__(self, path, method, body_as_dict):
         object.__init__(self)
 
+        assert not path.startswith('/')
+
         url = "%s/%s" % (database, path)
 
         headers = {
@@ -189,9 +191,27 @@ class CouchDBAsyncHTTPClient(object):
             return
 
         #
-        # extract models from response ...
+        # process response body ...
+        #
+
+        #
+        # CouchDB always returns response.body (a string) - let's convert the
+        # body to a dict so we can operate on it more effectively
         #
         response_body = json.loads(response.body) if response.body else {}
+
+        #
+        # the response body either contains a bunch of documents that
+        # need to be converted to model objects or a single document
+        #
+        if not self.create_model_from_doc:
+            self._call_callback(
+                True,               # is_ok
+                False,              # is_conflict
+                response_body,
+                response_body.get("id", None),
+                response_body.get("rev", None))
+            return
 
         models = []
         for row in response_body.get("rows", []):
@@ -205,12 +225,9 @@ class CouchDBAsyncHTTPClient(object):
             model = self.create_model_from_doc(doc)
             models.append(model)
 
-        #
-        # all done! :-)
-        #
         self._call_callback(
-            True,       # is_ok
-            False,      # is_conflict
+            True,                   # is_ok
+            False,                  # is_conflict
             models,
             response_body.get("id", None),
             response_body.get("rev", None))
@@ -218,11 +235,11 @@ class CouchDBAsyncHTTPClient(object):
     def _call_callback(self,
                        is_ok,
                        is_conflict,
-                       models=None,
+                       models_or_response_body=None,
                        _id=None,
                        _rev=None):
         assert self._callback is not None
-        self._callback(is_ok, is_conflict, models, _id, _rev, self)
+        self._callback(is_ok, is_conflict, models_or_response_body, _id, _rev, self)
         self._callback = None
 
 
@@ -515,13 +532,168 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         request = CouchDBAsyncHTTPRequest("", "GET", None)
 
         cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_db_fetch_done)
+
+    def _on_cac_db_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
+        assert is_conflict is False
+        if not is_ok:
+            self._call_callback(is_ok)
+            return
+
+        database_metrics = DatabaseMetrics(
+            database,
+            response_body.get("doc_count"),
+            response_body.get("data_size"),
+            response_body.get("disk_size"))
+
+        aaddmr = AsyncAllDesignDocsMetricsRetriever(database_metrics)
+        aaddmr.fetch(self._on_aaddmr_fetch_done)
+
+    def _on_aaddmr_fetch_done(self, is_ok, design_doc_metrics, aaddmr):
+        self._call_callback(is_ok, aaddmr.async_state, design_doc_metrics)
+
+    def _call_callback(self, is_ok, database_metrics=None, design_doc_metrics=None):
+        assert self._callback is not None
+        self._callback(
+            is_ok,
+            database_metrics if is_ok else None,
+            design_doc_metrics if is_ok else None,
+            self)
+        self._callback = None
+
+
+class AsyncAllDesignDocsMetricsRetriever(AsyncAction):
+    """Async'ly retriever metrics for all design docs in a database."""
+
+    def __init__(self, async_state=None):
+        AsyncAction.__init__(self, async_state)
+
+        self._todo = []
+        self._done = []
+        self._callback = None
+
+    def fetch(self, callback):
+        assert not self._callback
+        self._callback = callback
+
+        path = '_all_docs?startkey="_design"&endkey="_design0"'
+        request = CouchDBAsyncHTTPRequest(path, "GET", None)
+
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
         cac.fetch(request, self._on_cac_fetch_done)
 
-    def _on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
+    def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
         assert is_conflict is False
-        self._call_callback(is_ok)
+        if not is_ok:
+            self._call_callback(False)
+            return
+
+        for row in response_body.get("rows", []):
+            design_doc = row["key"]
+            self._todo.append(design_doc)
+            addmr = AsyncDesignDocMetricsRetriever(design_doc)
+            addmr.fetch(self._on_addmr_fetch_done)
+
+    def _on_addmr_fetch_done(self, is_ok, design_doc_metrics, addmr):
+        if not is_ok:
+            self._call_callback(False)
+            return
+
+        self._todo.remove(design_doc_metrics.design_doc)
+        self._done.append(design_doc_metrics)
+
+        self._call_callback(True)
 
     def _call_callback(self, is_ok):
-        assert self._callback is not None
-        self._callback(is_ok, self)
+        if not self._callback:
+            return
+
+        if not is_ok:
+            self._callback(False, None, self)
+            self._callback = None
+            return
+
+        if self._todo:
+            return
+
+        self._callback(True, self._done, self)
         self._callback = None
+
+
+class AsyncDesignDocMetricsRetriever(AsyncAction):
+    """Async'ly retriever metrics for a single design doc."""
+
+    def __init__(self, design_doc, async_state=None):
+        AsyncAction.__init__(self, async_state)
+
+        assert design_doc.startswith('_design/')
+        self.design_doc = design_doc
+
+        self._callback = None
+
+    def fetch(self, callback):
+        assert not self._callback
+        self._callback = callback
+
+        path = '%s/_info' % self.design_doc
+        request = CouchDBAsyncHTTPRequest(path, "GET", None)
+
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_fetch_done)
+
+    def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
+        assert is_conflict is False
+        if not is_ok:
+            self._call_callback(is_ok)
+            return
+
+        view_index = response_body.get('view_index', {})
+        self._call_callback(
+            is_ok,
+            view_index.get('data_size'),
+            view_index.get('disk_size'))
+
+    def _call_callback(self, is_ok, data_size=None, disk_size=None):
+        assert self._callback is not None
+        self._callback(
+            is_ok,
+            DesignDocMetrics(self.design_doc, data_size, disk_size) if is_ok else None,
+            self)
+        self._callback = None
+
+
+def _fragmentation(data_size, disk_size):
+    # see https://wiki.apache.org/couchdb/Compaction
+    # for details on fragmentation calculation
+    if data_size is None or disk_size is None:
+        return None
+    return ((disk_size - data_size) / disk_size) * 100.0
+
+
+class DatabaseMetrics(object):
+
+    def __init__(self, database, doc_count, data_size, disk_size):
+        object.__init__(self)
+
+        self.database = database
+        self.doc_count = doc_count
+        self.data_size = data_size
+        self.disk_size = disk_size
+
+    @property
+    def fragmentation(self):
+        return _fragmentation(self.data_size, self.disk_size)
+
+
+class DesignDocMetrics(object):
+
+    def __init__(self, design_doc, data_size, disk_size):
+        object.__init__(self)
+
+        self.design_doc = design_doc
+        self.data_size = data_size
+        self.disk_size = disk_size
+
+    @property
+    def fragmentation(self):
+        return _fragmentation(self.data_size, self.disk_size)
