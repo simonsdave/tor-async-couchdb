@@ -672,7 +672,7 @@ def _fragmentation(data_size, disk_size):
     # for details on fragmentation calculation
     if data_size is None or disk_size is None:
         return None
-    return ((disk_size - data_size) / disk_size) * 100.0
+    return ((disk_size - float(data_size)) / disk_size) * 100.0
 
 
 class DesignDocMetrics(object):
