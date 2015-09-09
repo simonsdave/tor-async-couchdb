@@ -540,24 +540,29 @@ class AsyncCouchDBHealthCheck(AsyncAction):
             self._call_callback(is_ok)
             return
 
-        database_metrics = DatabaseMetrics(
-            database,
+        async_state = (
             response_body.get("doc_count"),
             response_body.get("data_size"),
-            response_body.get("disk_size"))
-
-        aaddmr = AsyncAllDesignDocsMetricsRetriever(database_metrics)
+            response_body.get("disk_size"),
+        )
+        aaddmr = AsyncAllDesignDocsMetricsRetriever(async_state)
         aaddmr.fetch(self._on_aaddmr_fetch_done)
 
     def _on_aaddmr_fetch_done(self, is_ok, design_doc_metrics, aaddmr):
-        self._call_callback(is_ok, aaddmr.async_state, design_doc_metrics)
+        (doc_count, data_size, disk_size) = aaddmr.async_state
+        database_metrics = DatabaseMetrics(
+            database,
+            doc_count,
+            data_size,
+            disk_size,
+            design_doc_metrics)
+        self._call_callback(is_ok, database_metrics)
 
-    def _call_callback(self, is_ok, database_metrics=None, design_doc_metrics=None):
+    def _call_callback(self, is_ok, database_metrics=None):
         assert self._callback is not None
         self._callback(
             is_ok,
             database_metrics if is_ok else None,
-            design_doc_metrics if is_ok else None,
             self)
         self._callback = None
 
@@ -670,21 +675,6 @@ def _fragmentation(data_size, disk_size):
     return ((disk_size - data_size) / disk_size) * 100.0
 
 
-class DatabaseMetrics(object):
-
-    def __init__(self, database, doc_count, data_size, disk_size):
-        object.__init__(self)
-
-        self.database = database
-        self.doc_count = doc_count
-        self.data_size = data_size
-        self.disk_size = disk_size
-
-    @property
-    def fragmentation(self):
-        return _fragmentation(self.data_size, self.disk_size)
-
-
 class DesignDocMetrics(object):
 
     def __init__(self, design_doc, data_size, disk_size):
@@ -693,6 +683,22 @@ class DesignDocMetrics(object):
         self.design_doc = design_doc
         self.data_size = data_size
         self.disk_size = disk_size
+
+    @property
+    def fragmentation(self):
+        return _fragmentation(self.data_size, self.disk_size)
+
+
+class DatabaseMetrics(object):
+
+    def __init__(self, database, doc_count, data_size, disk_size, design_doc_metrics):
+        object.__init__(self)
+
+        self.database = database
+        self.doc_count = doc_count
+        self.data_size = data_size
+        self.disk_size = disk_size
+        self.design_doc_metrics = design_doc_metrics
 
     @property
     def fragmentation(self):

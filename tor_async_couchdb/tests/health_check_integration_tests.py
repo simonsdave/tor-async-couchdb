@@ -106,7 +106,7 @@ class RequestHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
 
-        def on_check_done(is_ok, database_metrics, design_doc_metrics, ahc):
+        def on_check_done(is_ok, database_metrics, ahc):
             # self.write(json.dumps(self._boo_as_dict(ap.model)))
             self.set_status(httplib.OK if is_ok else httplib.SERVICE_UNAVAILABLE)
             self.finish()

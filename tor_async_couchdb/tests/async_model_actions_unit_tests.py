@@ -592,10 +592,9 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
         with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             the_aushc = AsyncCouchDBHealthCheck()
 
-            def callback(is_ok, database_metrics, design_doc_metrics, aushc):
+            def callback(is_ok, database_metrics, aushc):
                 self.assertTrue(is_ok)
                 self.assertIsNotNone(database_metrics)
-                self.assertIsNotNone(design_doc_metrics)
                 self.assertTrue(aushc is the_aushc)
 
             the_aushc.check(callback)
@@ -609,10 +608,9 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
         with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
             the_aushc = AsyncCouchDBHealthCheck()
 
-            def callback(is_ok, database_metrics, design_doc_metrics, aushc):
+            def callback(is_ok, database_metrics, aushc):
                 self.assertFalse(is_ok)
                 self.assertIsNone(database_metrics)
-                self.assertIsNone(design_doc_metrics)
                 self.assertTrue(aushc is the_aushc)
 
             the_aushc.check(callback)
