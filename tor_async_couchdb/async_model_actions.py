@@ -668,11 +668,19 @@ class AsyncDesignDocMetricsRetriever(AsyncAction):
 
 
 def _fragmentation(data_size, disk_size):
-    # see https://wiki.apache.org/couchdb/Compaction
-    # for details on fragmentation calculation
+    """Think of the fragmentation metric is that it's
+    a measure of the % of the database that's used to store old documents
+    and their associated metadata
+
+    See
+    https://wiki.apache.org/couchdb/Compaction
+    and
+    http://docs.couchdb.org/en/latest/config/compaction.html#compaction-daemon-rules
+    for details on fragmentation calculation.
+    """
     if data_size is None or disk_size is None:
         return None
-    return round(((disk_size - float(data_size)) / disk_size) * 100.0, 2)
+    return int(((disk_size - float(data_size)) / disk_size) * 100.0)
 
 
 class DesignDocMetrics(object):
@@ -685,7 +693,8 @@ class DesignDocMetrics(object):
         self.disk_size = disk_size
 
     @property
-    def fragmentation(self):
+    def view_fragmentation(self):
+        """The view's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
 
 
@@ -701,5 +710,6 @@ class DatabaseMetrics(object):
         self.design_doc_metrics = design_doc_metrics
 
     @property
-    def fragmentation(self):
+    def database_fragmentation(self):
+        """The database's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
