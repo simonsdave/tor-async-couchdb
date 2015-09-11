@@ -53,21 +53,20 @@ class RequestHandler(tornado.web.RequestHandler):
         if database_metrics:
             body['details'] = {
                 "database": {
-#                    "status": self._color(is_ok),
+                    # "status": self._color(is_ok),
                     "docCount": database_metrics.doc_count,
                     "dataSize": database_metrics.data_size,
                     "diskSize": database_metrics.disk_size,
-                    "fragmentation": database_metrics.database_fragmentation,
-                    "views": {
+                    "fragmentation": database_metrics.fragmentation,
+                    "designDocs": {
                     }
                 }
             }
-            for view_metrics in database_metrics.view_metrics:
-                body['details']['views'][view_metrics.design_doc] = {
-                    "docCount": view_metrics.doc_count,
-                    "dataSize": view_metrics.data_size,
-                    "diskSize": view_metrics.disk_size,
-                    "fragmentation": view_metrics.database_fragmentation,
+            for design_doc_metrics in database_metrics.design_doc_metrics:
+                body["details"]["database"]["designDocs"][design_doc_metrics.design_doc] = {
+                    "dataSize": design_doc_metrics.data_size,
+                    "diskSize": design_doc_metrics.disk_size,
+                    "fragmentation": design_doc_metrics.fragmentation,
                 }
 
         self.write(body)
