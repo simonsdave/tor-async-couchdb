@@ -581,6 +581,28 @@ class AsyncAllDesignDocsMetricsRetriever(AsyncAction):
         assert not self._callback
         self._callback = callback
 
+        #
+        # try something like this to get a sense of the response
+        #
+        #   curl 'http://127.0.0.1:5984/database/_all_docs?startkey="_design"&endkey="_design0"' | python -m json.tool
+        #
+        # and just remember to replace "database" in the above request. the
+        # output will look something like:
+        #
+        # {
+        #     "offset": 2,
+        #     "rows": [
+        #         {
+        #             "id": "_design/fruit_by_fruit_id",
+        #             "key": "_design/fruit_by_fruit_id",
+        #             "value": {
+        #                 "rev": "1-446934fdc8cd18bee9db4b9df095074a"
+        #             }
+        #         }
+        #     ],
+        #     "total_rows": 3
+        # }
+        #
         path = '_all_docs?startkey="_design"&endkey="_design0"'
         request = CouchDBAsyncHTTPRequest(path, "GET", None)
 
@@ -693,8 +715,8 @@ class DesignDocMetrics(object):
         self.disk_size = disk_size
 
     @property
-    def view_fragmentation(self):
-        """The view's fragmentation as an integer percentage."""
+    def fragmentation(self):
+        """The design doc's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
 
 
@@ -710,6 +732,6 @@ class DatabaseMetrics(object):
         self.design_doc_metrics = design_doc_metrics
 
     @property
-    def database_fragmentation(self):
+    def fragmentation(self):
         """The database's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
