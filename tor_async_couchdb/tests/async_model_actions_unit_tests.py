@@ -8,14 +8,16 @@ import uuid
 
 import mock
 
-from ..async_model_actions import BaseAsyncModelRetriever
 from ..async_model_actions import AsyncDeleter
 from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
 from ..async_model_actions import AsyncCouchDBHealthCheck
+from ..async_model_actions import BaseAsyncModelRetriever
 from ..async_model_actions import CouchDBAsyncHTTPClient
+from ..async_model_actions import DatabaseMetrics
 from ..async_model_actions import InvalidTypeInDocForStoreException
+from ..async_model_actions import ViewMetrics
 from ..model import Model
 from .. import async_model_actions  # noqa, needed for patching using relative path
 
@@ -612,3 +614,58 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
                 self.assertTrue(aushc is the_aushc)
 
             the_aushc.check(callback)
+
+
+class ViewMetricsUnitTaseCase(unittest.TestCase):
+    """A collection of unit tests for the ViewMetrics class."""
+
+    def test_ctr(self):
+        the_design_doc = mock.Mock()
+        the_data_size = mock.Mock()
+        the_disk_size = mock.Mock()
+
+        view_metrics = ViewMetrics(the_design_doc, the_data_size, the_disk_size)
+
+        self.assertTrue(view_metrics.design_doc is the_design_doc)
+        self.assertTrue(view_metrics.data_size is the_data_size)
+        self.assertTrue(view_metrics.disk_size is the_disk_size)
+
+    def test_fragmentation(self):
+        self.assertIsNone(ViewMetrics(mock.Mock(), None, None).fragmentation)
+        self.assertIsNone(ViewMetrics(mock.Mock(), 1, None).fragmentation)
+        self.assertIsNone(ViewMetrics(mock.Mock(), None, 2).fragmentation)
+        self.assertIsNotNone(ViewMetrics(mock.Mock(), 100, 100).fragmentation)
+        self.assertEqual(0, ViewMetrics(mock.Mock(), 100, 100).fragmentation)
+        self.assertEqual(50, ViewMetrics(mock.Mock(), 1000, 2000).fragmentation)
+
+
+class DatabaseMetricsUnitTaseCase(unittest.TestCase):
+    """A collection of unit tests for the DatabaseMetrics class."""
+
+    def test_ctr(self):
+        the_database = mock.Mock()
+        the_doc_count = mock.Mock()
+        the_data_size = mock.Mock()
+        the_disk_size = mock.Mock()
+        the_view_metrics = mock.Mock()
+
+        database_metrics = DatabaseMetrics(
+            the_database,
+            the_doc_count,
+            the_data_size,
+            the_disk_size,
+            the_view_metrics)
+
+        self.assertTrue(database_metrics.database is the_database)
+        self.assertTrue(database_metrics.doc_count is the_doc_count)
+        self.assertTrue(database_metrics.data_size is the_data_size)
+        self.assertTrue(database_metrics.disk_size is the_disk_size)
+        self.assertTrue(database_metrics.view_metrics is the_view_metrics)
+
+    def test_fragmentation(self):
+        self.assertIsNone(DatabaseMetrics(mock.Mock(), 1, None, None, []).fragmentation)
+        self.assertIsNone(DatabaseMetrics(mock.Mock(), 1, 1, None, []).fragmentation)
+        self.assertIsNone(DatabaseMetrics(mock.Mock(), 1, None, 2, []).fragmentation)
+        self.assertIsNotNone(DatabaseMetrics(mock.Mock(), 1, 100, 100, []).fragmentation)
+        self.assertEqual(0, DatabaseMetrics(mock.Mock(), 1, 100, 100, []).fragmentation)
+        self.assertEqual(50, DatabaseMetrics(mock.Mock(), 1, 1000, 2000, []).fragmentation)

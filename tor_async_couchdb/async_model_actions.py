@@ -42,6 +42,22 @@ This config option is very useful when CouchDB self-signed certs.
 """
 validate_cert = True
 
+"""Think of the fragmentation metric is that it's
+a measure of the % of the database or view that's used
+to store old documents and their associated metadata.
+
+See
+https://wiki.apache.org/couchdb/Compaction
+and
+http://docs.couchdb.org/en/latest/config/compaction.html#compaction-daemon-rules
+for details on fragmentation calculation.
+
+The comes a point when there's too much old stuff
+hanging around in a database and/or view ie the fragmentation
+level passes some threshold.
+"""
+
+
 """```_doc_type_reg_ex``` is used to verify the format of the
 type property for each document before the document is written
 to the store.
@@ -544,6 +560,54 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         self._callback = None
 
 
+def _fragmentation(data_size, disk_size):
+    """Think of the fragmentation metric is that it's
+    a measure of the % of the database or view that's used
+    to store old documents and their associated metadata.
+
+    See
+    https://wiki.apache.org/couchdb/Compaction
+    and
+    http://docs.couchdb.org/en/latest/config/compaction.html#compaction-daemon-rules
+    for details on fragmentation calculation.
+    """
+    if data_size is None or disk_size is None:
+        return None
+    return int(((disk_size - float(data_size)) / disk_size) * 100.0)
+
+
+class ViewMetrics(object):
+
+    def __init__(self, design_doc, data_size, disk_size):
+        object.__init__(self)
+
+        self.design_doc = design_doc
+        self.data_size = data_size
+        self.disk_size = disk_size
+
+    @property
+    def fragmentation(self):
+        """The view's fragmentation as an integer percentage."""
+        return _fragmentation(self.data_size, self.disk_size)
+
+
+class DatabaseMetrics(object):
+
+    def __init__(self, database, doc_count, data_size, disk_size, view_metrics):
+        object.__init__(self)
+
+        self.database = database
+        self.doc_count = doc_count
+        self.data_size = data_size
+        self.disk_size = disk_size
+        self.view_metrics = view_metrics
+
+    @property
+    def fragmentation(self):
+        """The database's fragmentation as an integer percentage."""
+        return _fragmentation(self.data_size, self.disk_size)
+
+
 class AsyncStatsRetriever(AsyncAction):
     """Async'ly retrieve stats on the CouchDB database."""
 
@@ -713,51 +777,3 @@ class AsyncViewMetricsRetriever(AsyncAction):
             ViewMetrics(self.design_doc, data_size, disk_size) if is_ok else None,
             self)
         self._callback = None
-
-
-def _fragmentation(data_size, disk_size):
-    """Think of the fragmentation metric is that it's
-    a measure of the % of the database that's used to store old documents
-    and their associated metadata
-
-    See
-    https://wiki.apache.org/couchdb/Compaction
-    and
-    http://docs.couchdb.org/en/latest/config/compaction.html#compaction-daemon-rules
-    for details on fragmentation calculation.
-    """
-    if data_size is None or disk_size is None:
-        return None
-    return int(((disk_size - float(data_size)) / disk_size) * 100.0)
-
-
-class ViewMetrics(object):
-
-    def __init__(self, design_doc, data_size, disk_size):
-        object.__init__(self)
-
-        self.design_doc = design_doc
-        self.data_size = data_size
-        self.disk_size = disk_size
-
-    @property
-    def fragmentation(self):
-        """The view's fragmentation as an integer percentage."""
-        return _fragmentation(self.data_size, self.disk_size)
-
-
-class DatabaseMetrics(object):
-
-    def __init__(self, database, doc_count, data_size, disk_size, view_metrics):
-        object.__init__(self)
-
-        self.database = database
-        self.doc_count = doc_count
-        self.data_size = data_size
-        self.disk_size = disk_size
-        self.view_metrics = view_metrics
-
-    @property
-    def fragmentation(self):
-        """The database's fragmentation as an integer percentage."""
-        return _fragmentation(self.data_size, self.disk_size)
