@@ -7,6 +7,7 @@ import httplib
 import json
 import logging
 import optparse
+import re
 import time
 
 import tornado.httpserver
@@ -134,6 +135,119 @@ class SingleResourceRequestHandler(RequestHandler):
         self.finish()
 
 
+class HealthRequestHandler(tornado.web.RequestHandler):
+
+    _true_reg_ex = re.compile(
+        "^(true|t|y|yes|1)$",
+        re.IGNORECASE)
+
+    _false_reg_ex = re.compile(
+        "^(false|f|n|no|0)$",
+        re.IGNORECASE)
+
+    url_spec = r"/v1.0/_health"
+
+    @tornado.web.asynchronous
+    def get(self):
+        is_quick = self._is_quick()
+        if is_quick is None:
+            self.set_status(httplib.BAD_REQUEST)
+            self.finish()
+            return
+
+        if is_quick:
+            self._write_response(True)
+            return
+
+        acdbhc = async_model_actions.AsyncCouchDBHealthCheck()
+        acdbhc.check(self._get_on_acdbhc_check_done)
+
+    def _get_on_acdbhc_check_done(self, is_ok, acdbhc):
+        self._write_response(is_ok)
+
+    def _write_response(self, is_ok):
+        location = "%s://%s%s" % (
+            self.request.protocol,
+            self.request.host,
+            self.request.path,
+        )
+
+        body = {
+            "status": "green" if is_ok else "red",
+            "links": {
+                "self": {
+                    "href": location,
+                },
+            },
+        }
+        self.write(body)
+
+        self.set_header("location", location)
+
+        self.set_status(httplib.OK if is_ok else httplib.SERVICE_UNAVAILABLE)
+        self.finish()
+
+    def _is_quick(self):
+        arg_value = self.get_argument("quick", "y")
+
+        if type(self)._true_reg_ex.match(arg_value):
+            return True
+
+        if type(self)._false_reg_ex.match(arg_value):
+            return False
+
+        return None
+
+
+class StatsRequestHandler(tornado.web.RequestHandler):
+
+    url_spec = r"/v1.0/_stats"
+
+    @tornado.web.asynchronous
+    def get(self):
+        asr = async_model_actions.AsyncStatsRetriever()
+        asr.fetch(self._on_asr_fetch_done)
+
+    def _on_asr_fetch_done(self, is_ok, database_metrics, asr):
+        location = "%s://%s%s" % (
+            self.request.protocol,
+            self.request.host,
+            self.request.path,
+        )
+        body = {
+            "links": {
+                "self": {
+                    "href": location,
+                },
+            },
+        }
+
+        if database_metrics:
+            body['details'] = {
+                "database": {
+                    "docCount": database_metrics.doc_count,
+                    "dataSize": database_metrics.data_size,
+                    "diskSize": database_metrics.disk_size,
+                    "fragmentation": database_metrics.fragmentation,
+                    "views": {
+                    }
+                }
+            }
+            for view_metrics in database_metrics.view_metrics:
+                body["details"]["database"]["views"][view_metrics.design_doc] = {
+                    "dataSize": view_metrics.data_size,
+                    "diskSize": view_metrics.disk_size,
+                    "fragmentation": view_metrics.fragmentation,
+                }
+
+        self.write(body)
+
+        self.set_header("location", location)
+
+        self.set_status(httplib.OK if is_ok else httplib.SERVICE_UNAVAILABLE)
+        self.finish()
+
+
 class CommandLineParser(optparse.OptionParser):
 
     def __init__(self):
@@ -198,6 +312,14 @@ if __name__ == "__main__":
         (
             SingleResourceRequestHandler.url_spec,
             SingleResourceRequestHandler
+        ),
+        (
+            StatsRequestHandler.url_spec,
+            StatsRequestHandler
+        ),
+        (
+            HealthRequestHandler.url_spec,
+            HealthRequestHandler
         ),
     ]
 
