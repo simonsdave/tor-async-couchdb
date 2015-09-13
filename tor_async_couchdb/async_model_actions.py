@@ -532,6 +532,33 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         request = CouchDBAsyncHTTPRequest("", "GET", None)
 
         cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_fetch_done)
+
+    def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, cac):
+        assert is_conflict is False
+        self._call_callback(is_ok)
+
+    def _call_callback(self, is_ok):
+        assert self._callback is not None
+        self._callback(is_ok, self)
+        self._callback = None
+
+
+class AsyncStatsRetriever(AsyncAction):
+    """Async'ly retrieve stats on the CouchDB database."""
+
+    def __init__(self, async_state=None):
+        AsyncAction.__init__(self, async_state)
+
+        self._callback = None
+
+    def fetch(self, callback):
+        assert not self._callback
+        self._callback = callback
+
+        request = CouchDBAsyncHTTPRequest("", "GET", None)
+
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
         cac.fetch(request, self._on_cac_db_fetch_done)
 
     def _on_cac_db_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
@@ -545,7 +572,7 @@ class AsyncCouchDBHealthCheck(AsyncAction):
             response_body.get("data_size"),
             response_body.get("disk_size"),
         )
-        aaddmr = AsyncAllDesignDocsMetricsRetriever(async_state)
+        aaddmr = AsyncAllViewMetricsRetriever(async_state)
         aaddmr.fetch(self._on_aaddmr_fetch_done)
 
     def _on_aaddmr_fetch_done(self, is_ok, design_doc_metrics, aaddmr):
@@ -567,8 +594,8 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         self._callback = None
 
 
-class AsyncAllDesignDocsMetricsRetriever(AsyncAction):
-    """Async'ly retriever metrics for all design docs in a database."""
+class AsyncAllViewMetricsRetriever(AsyncAction):
+    """Async'ly retrieve metrics for all views in a database."""
 
     def __init__(self, async_state=None):
         AsyncAction.__init__(self, async_state)
@@ -616,9 +643,9 @@ class AsyncAllDesignDocsMetricsRetriever(AsyncAction):
             return
 
         for row in response_body.get("rows", []):
-            design_doc = row["key"]
+            design_doc = row["key"].split("/")[1]
             self._todo.append(design_doc)
-            addmr = AsyncDesignDocMetricsRetriever(design_doc)
+            addmr = AsyncViewMetricsRetriever(design_doc)
             addmr.fetch(self._on_addmr_fetch_done)
 
     def _on_addmr_fetch_done(self, is_ok, design_doc_metrics, addmr):
@@ -647,13 +674,12 @@ class AsyncAllDesignDocsMetricsRetriever(AsyncAction):
         self._callback = None
 
 
-class AsyncDesignDocMetricsRetriever(AsyncAction):
-    """Async'ly retriever metrics for a single design doc."""
+class AsyncViewMetricsRetriever(AsyncAction):
+    """Async'ly retrieve metrics for a single view."""
 
     def __init__(self, design_doc, async_state=None):
         AsyncAction.__init__(self, async_state)
 
-        assert design_doc.startswith('_design/')
         self.design_doc = design_doc
 
         self._callback = None
@@ -662,7 +688,7 @@ class AsyncDesignDocMetricsRetriever(AsyncAction):
         assert not self._callback
         self._callback = callback
 
-        path = '%s/_info' % self.design_doc
+        path = '_design/%s/_info' % self.design_doc
         request = CouchDBAsyncHTTPRequest(path, "GET", None)
 
         cac = CouchDBAsyncHTTPClient(httplib.OK, None)
@@ -684,7 +710,7 @@ class AsyncDesignDocMetricsRetriever(AsyncAction):
         assert self._callback is not None
         self._callback(
             is_ok,
-            DesignDocMetrics(self.design_doc, data_size, disk_size) if is_ok else None,
+            ViewMetrics(self.design_doc, data_size, disk_size) if is_ok else None,
             self)
         self._callback = None
 
@@ -705,7 +731,7 @@ def _fragmentation(data_size, disk_size):
     return int(((disk_size - float(data_size)) / disk_size) * 100.0)
 
 
-class DesignDocMetrics(object):
+class ViewMetrics(object):
 
     def __init__(self, design_doc, data_size, disk_size):
         object.__init__(self)
@@ -716,20 +742,20 @@ class DesignDocMetrics(object):
 
     @property
     def fragmentation(self):
-        """The design doc's fragmentation as an integer percentage."""
+        """The view's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
 
 
 class DatabaseMetrics(object):
 
-    def __init__(self, database, doc_count, data_size, disk_size, design_doc_metrics):
+    def __init__(self, database, doc_count, data_size, disk_size, view_metrics):
         object.__init__(self)
 
         self.database = database
         self.doc_count = doc_count
         self.data_size = data_size
         self.disk_size = disk_size
-        self.design_doc_metrics = design_doc_metrics
+        self.view_metrics = view_metrics
 
     @property
     def fragmentation(self):
