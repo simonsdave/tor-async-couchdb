@@ -13,6 +13,7 @@ from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
 from ..async_model_actions import AsyncCouchDBHealthCheck
+from ..async_model_actions import AsyncViewMetricsRetriever
 from ..async_model_actions import BaseAsyncModelRetriever
 from ..async_model_actions import CouchDBAsyncHTTPClient
 from ..async_model_actions import DatabaseMetrics
@@ -669,3 +670,126 @@ class DatabaseMetricsUnitTaseCase(unittest.TestCase):
         self.assertIsNotNone(DatabaseMetrics(mock.Mock(), 1, 100, 100, []).fragmentation)
         self.assertEqual(0, DatabaseMetrics(mock.Mock(), 1, 100, 100, []).fragmentation)
         self.assertEqual(50, DatabaseMetrics(mock.Mock(), 1, 1000, 2000, []).fragmentation)
+
+
+class AsyncViewMetricsRetrieverUnitTaseCase(unittest.TestCase):
+    """A collection of unit tests for the AsyncViewMetricsRetriever class."""
+
+    def test_ctr_with_async_state(self):
+        the_design_doc = mock.Mock()
+        the_async_state = mock.Mock()
+
+        avmr = AsyncViewMetricsRetriever(the_design_doc, the_async_state)
+
+        self.assertTrue(avmr.design_doc is the_design_doc)
+        self.assertTrue(avmr.async_state is the_async_state)
+
+    def test_ctr_without_async_state(self):
+        the_design_doc = mock.Mock()
+
+        avmr = AsyncViewMetricsRetriever(the_design_doc)
+
+        self.assertTrue(avmr.design_doc is the_design_doc)
+        self.assertIsNone(avmr.async_state)
+
+    def test_fetch_error_talking_to_couchdb(self):
+        the_is_ok = False
+        the_is_conflict = False
+        the_response_body = None
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+
+            the_avmr = AsyncViewMetricsRetriever(mock.Mock())
+
+            def callback(is_ok, view_metrics, avmr):
+                self.assertFalse(is_ok)
+                self.assertIsNone(view_metrics)
+                self.assertEqual(type(avmr).FFD_ERROR_TALKING_TO_COUCHDB, avmr.fetch_failure_detail)
+                self.assertTrue(avmr is the_avmr)
+
+            the_avmr.fetch(callback)
+
+    def test_fetch_invalid_response_body_no_view_index(self):
+        the_is_ok = True
+        the_is_conflict = False
+        the_response_body = {}
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+
+            the_avmr = AsyncViewMetricsRetriever(mock.Mock())
+
+            def callback(is_ok, view_metrics, avmr):
+                self.assertTrue(is_ok)
+                self.assertIsNotNone(view_metrics)
+                self.assertIsNone(view_metrics.data_size)
+                self.assertIsNone(view_metrics.disk_size)
+                self.assertEqual(type(avmr).FFD_INVALID_RESPONSE_BODY, avmr.fetch_failure_detail)
+                self.assertTrue(avmr is the_avmr)
+
+            the_avmr.fetch(callback)
+
+    def test_fetch_invalid_response_body_no_data_size(self):
+        the_is_ok = True
+        the_is_conflict = False
+        the_disk_size = 42
+        the_response_body = {'view_index': {'disk_size': the_disk_size}}
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+
+            the_avmr = AsyncViewMetricsRetriever(mock.Mock())
+
+            def callback(is_ok, view_metrics, avmr):
+                self.assertTrue(is_ok)
+                self.assertIsNotNone(view_metrics)
+                self.assertIsNone(view_metrics.data_size)
+                self.assertEqual(view_metrics.disk_size, the_disk_size)
+                self.assertEqual(type(avmr).FFD_INVALID_RESPONSE_BODY, avmr.fetch_failure_detail)
+                self.assertTrue(avmr is the_avmr)
+
+            the_avmr.fetch(callback)
+
+    def test_fetch_invalid_response_body_no_disk_size(self):
+        the_is_ok = True
+        the_is_conflict = False
+        the_data_size = 42
+        the_response_body = {'view_index': {'data_size': the_data_size}}
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+
+            the_avmr = AsyncViewMetricsRetriever(mock.Mock())
+
+            def callback(is_ok, view_metrics, avmr):
+                self.assertTrue(is_ok)
+                self.assertIsNotNone(view_metrics)
+                self.assertEqual(view_metrics.data_size, the_data_size)
+                self.assertIsNone(view_metrics.disk_size)
+                self.assertEqual(type(avmr).FFD_INVALID_RESPONSE_BODY, avmr.fetch_failure_detail)
+                self.assertTrue(avmr is the_avmr)
+
+            the_avmr.fetch(callback)
+
+    def test_happy_path(self):
+        the_is_ok = True
+        the_is_conflict = False
+        the_data_size = 42
+        the_disk_size = the_data_size + 1000
+        the_response_body = {'view_index': {'data_size': the_data_size, 'disk_size': the_disk_size}}
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+
+            the_avmr = AsyncViewMetricsRetriever(mock.Mock())
+
+            def callback(is_ok, view_metrics, avmr):
+                self.assertTrue(is_ok)
+                self.assertIsNotNone(view_metrics)
+                self.assertEqual(view_metrics.data_size, the_data_size)
+                self.assertEqual(view_metrics.disk_size, the_disk_size)
+                self.assertEqual(type(avmr).FFD_OK, avmr.fetch_failure_detail)
+                self.assertTrue(avmr is the_avmr)
+
+            the_avmr.fetch(callback)

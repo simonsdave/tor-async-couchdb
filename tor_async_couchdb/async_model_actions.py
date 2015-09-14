@@ -741,10 +741,17 @@ class AsyncAllViewMetricsRetriever(AsyncAction):
 class AsyncViewMetricsRetriever(AsyncAction):
     """Async'ly retrieve metrics for a single view."""
 
+    # FDD = Fetch Failure Details
+    FFD_OK = 0x0000
+    FFD_ERROR = 0x0080
+    FFD_ERROR_TALKING_TO_COUCHDB = FFD_ERROR | 0x0001
+    FFD_INVALID_RESPONSE_BODY = 0x0002
+
     def __init__(self, design_doc, async_state=None):
         AsyncAction.__init__(self, async_state)
 
         self.design_doc = design_doc
+        self.fetch_failure_detail = None
 
         self._callback = None
 
@@ -758,20 +765,26 @@ class AsyncViewMetricsRetriever(AsyncAction):
         cac = CouchDBAsyncHTTPClient(httplib.OK, None)
         cac.fetch(request, self._on_cac_fetch_done)
 
-    def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
+    def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, cac):
         assert is_conflict is False
         if not is_ok:
-            self._call_callback(is_ok)
+            self._call_callback(False, type(self).FFD_ERROR_TALKING_TO_COUCHDB)
             return
 
         view_index = response_body.get('view_index', {})
+        data_size = view_index.get('data_size')
+        disk_size = view_index.get('disk_size')
+        cls = type(self)
         self._call_callback(
-            is_ok,
-            view_index.get('data_size'),
-            view_index.get('disk_size'))
+            True,
+            cls.FFD_OK if data_size is not None and disk_size is not None else cls.FFD_INVALID_RESPONSE_BODY,
+            data_size,
+            disk_size)
 
-    def _call_callback(self, is_ok, data_size=None, disk_size=None):
+    def _call_callback(self, is_ok, fdd, data_size=None, disk_size=None):
         assert self._callback is not None
+        assert self.fetch_failure_detail is None
+        self.fetch_failure_detail = fdd
         self._callback(
             is_ok,
             ViewMetrics(self.design_doc, data_size, disk_size) if is_ok else None,
