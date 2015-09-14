@@ -28,7 +28,7 @@ class DatabaseCreator(object):
         '    "language": "javascript",'
         '    "views": {'
         '        "%VIEW_NAME%": {'
-        '            "map": "function(doc) { if (doc.type.match(/^fruit_v1.0/i)) { emit(doc.fruit_id) } }"'
+        '            "map": "function(doc) { if (doc.type.match(/^fruit_v1.0/i)) { emit(doc.fruit_id, null) } }"'
         '        }'
         '    }'
         '}'
@@ -47,11 +47,6 @@ class DatabaseCreator(object):
                 design_doc_name)
             self.design_docs[design_doc_name] = design_doc
 
-            print "curl %s/_design/%s/_view/%s?include_docs=true" % (
-                self.database_url,
-                design_doc_name,
-                design_doc_name)
-
     def __enter__(self):
         """Setup the integration tests environment. Specifically:
 
@@ -61,7 +56,6 @@ class DatabaseCreator(object):
         which permits reading persistant instances of Boo
         -- configure the async model I/O classes to use the newly
         created temporary database
-
         """
         # in case a previous test didn't clean itself up delete database
         # totally ignoring the result
