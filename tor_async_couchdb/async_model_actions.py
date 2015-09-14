@@ -661,8 +661,17 @@ class AsyncStatsRetriever(AsyncAction):
 class AsyncAllViewMetricsRetriever(AsyncAction):
     """Async'ly retrieve metrics for all views in a database."""
 
+    # FDD = Fetch Failure Details
+    FFD_OK = 0x0000
+    FFD_ERROR = 0x0080
+    FFD_ERROR_TALKING_TO_COUCHDB = FFD_ERROR | 0x0001
+    FFD_ERROR_FETCHING_VIEW_METRICS = FFD_ERROR | 0x0002
+    FFD_NO_DESIGN_DOCS_IN_DATABASE = 0x0003
+
     def __init__(self, async_state=None):
         AsyncAction.__init__(self, async_state)
+
+        self.fetch_failure_detail = None
 
         self._todo = []
         self._done = []
@@ -703,10 +712,15 @@ class AsyncAllViewMetricsRetriever(AsyncAction):
     def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
         assert is_conflict is False
         if not is_ok:
-            self._call_callback(False)
+            self._call_callback(False, type(self).FFD_ERROR_TALKING_TO_COUCHDB)
             return
 
-        for row in response_body.get("rows", []):
+        rows = response_body.get("rows", [])
+        if not rows:
+            self._call_callback(True, type(self).FFD_NO_DESIGN_DOCS_IN_DATABASE)
+            return
+
+        for row in rows:
             design_doc = row["key"].split("/")[1]
             self._todo.append(design_doc)
             addmr = AsyncViewMetricsRetriever(design_doc)
@@ -714,19 +728,21 @@ class AsyncAllViewMetricsRetriever(AsyncAction):
 
     def _on_addmr_fetch_done(self, is_ok, design_doc_metrics, addmr):
         if not is_ok:
-            self._call_callback(False)
+            self._call_callback(False, type(self).FFD_ERROR_FETCHING_VIEW_METRICS)
             return
 
         self._todo.remove(design_doc_metrics.design_doc)
         self._done.append(design_doc_metrics)
 
-        self._call_callback(True)
+        self._call_callback(True, type(self).FFD_OK)
 
-    def _call_callback(self, is_ok):
+    def _call_callback(self, is_ok, fetch_failure_detail):
         if not self._callback:
             return
 
         if not is_ok:
+            assert self.fetch_failure_detail is None
+            self.fetch_failure_detail = fetch_failure_detail
             self._callback(False, None, self)
             self._callback = None
             return
@@ -734,6 +750,8 @@ class AsyncAllViewMetricsRetriever(AsyncAction):
         if self._todo:
             return
 
+        assert self.fetch_failure_detail is None
+        self.fetch_failure_detail = fetch_failure_detail
         self._callback(True, self._done, self)
         self._callback = None
 
