@@ -13,7 +13,7 @@ import requests
 import tornado.testing
 import tornado.web
 
-import tor_async_couchdb.async_model_actions
+from .. import async_model_actions
 
 
 class DatabaseCreator(object):
@@ -77,7 +77,7 @@ class DatabaseCreator(object):
                 assert response.status_code == httplib.CREATED
 
         # connect async actions to our temp database
-        tor_async_couchdb.async_model_actions.database = self.database_url
+        async_model_actions.database = self.database_url
 
         return self
 
@@ -104,7 +104,7 @@ class RequestHandler(tornado.web.RequestHandler):
             self.set_status(httplib.OK if is_ok else httplib.SERVICE_UNAVAILABLE)
             self.finish()
 
-        ahc = tor_async_couchdb.async_model_actions.AsyncCouchDBHealthCheck()
+        ahc = async_model_actions.AsyncCouchDBHealthCheck()
         ahc.check(on_check_done)
 
 
