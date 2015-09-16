@@ -723,16 +723,16 @@ class AsyncAllViewMetricsRetriever(AsyncAction):
         for row in rows:
             design_doc = row["key"].split("/")[1]
             self._todo.append(design_doc)
-            addmr = AsyncViewMetricsRetriever(design_doc)
-            addmr.fetch(self._on_addmr_fetch_done)
+            avmr = AsyncViewMetricsRetriever(design_doc)
+            avmr.fetch(self._on_avmr_fetch_done)
 
-    def _on_addmr_fetch_done(self, is_ok, design_doc_metrics, addmr):
+    def _on_avmr_fetch_done(self, is_ok, view_metrics, avmr):
         if not is_ok:
             self._call_callback(False, type(self).FFD_ERROR_FETCHING_VIEW_METRICS)
             return
 
-        self._todo.remove(design_doc_metrics.design_doc)
-        self._done.append(design_doc_metrics)
+        self._todo.remove(view_metrics.design_doc)
+        self._done.append(view_metrics)
 
         self._call_callback(True, type(self).FFD_OK)
 
