@@ -173,6 +173,57 @@ class CouchDBAsyncHTTPClientTestCase(unittest.TestCase):
                     logger_patch.info.call_args_list,
                     [mock.call(expected_info_message)])
 
+    def test_detect_conflict(self):
+        response = mock.Mock()
+        response.code = httplib.CONFLICT
+        response.error = None
+        response.body = None
+        response.time_info = {}
+        response.effective_url = "http://www.example.com/%s" % uuid.uuid4().hex
+        response.request_time = 0.99
+        response.request = mock.Mock()
+        response.request.method = "GET"
+
+        def fetch_patch(request, callback):
+            callback(response)
+
+        with mock.patch("tornado.httpclient.AsyncHTTPClient.fetch", side_effect=fetch_patch):
+            the_ac = CouchDBAsyncHTTPClient(httplib.OK, None)
+            callback = mock.Mock()
+            the_ac.fetch(response.request, callback)
+            callback.assert_called_once_with(False, True, None, None, None, the_ac)
+
+    def test_on_response_dot_error(self):
+        response = mock.Mock()
+        response.code = httplib.OK
+        response.error = uuid.uuid4().hex
+        response.body = None
+        response.time_info = {}
+        response.effective_url = "http://www.example.com/%s" % uuid.uuid4().hex
+        response.request_time = 0.99
+        response.request = mock.Mock()
+        response.request.method = "GET"
+
+        def fetch_patch(request, callback):
+            callback(response)
+
+        with mock.patch("tornado.httpclient.AsyncHTTPClient.fetch", side_effect=fetch_patch):
+            the_ac = CouchDBAsyncHTTPClient(response.code, None)
+
+            with mock.patch(__name__ + '.async_model_actions._logger') as logger_patch:
+                callback = mock.Mock()
+                the_ac.fetch(response.request, callback)
+                callback.assert_called_once_with(False, False, None, None, None, the_ac)
+
+                expected_logger_error_call_arg_list = (
+                    "CouchDB responded to %s on %s with error '%s'",
+                    response.request.method,
+                    response.effective_url,
+                    response.error)
+                self.assertEqual(
+                    logger_patch.error.call_args_list,
+                    mock.call(expected_logger_error_call_arg_list))
+
 
 class BaseAsyncModelRetrieverUnitTaseCase(unittest.TestCase):
     """A collection of unit tests for the BaseAsyncModelRetriever class."""
