@@ -798,6 +798,28 @@ class AsyncViewMetricsRetrieverUnitTaseCase(unittest.TestCase):
             the_avmr.fetch(callback)
 
 
+class AsyncViewMetricsRetrieverPatcher(object):
+
+    def __init__(self, is_oks, view_metrics):
+
+        self._i = 0
+
+        def fetch_patch(avmr, callback):
+            callback(is_oks[self._i], view_metrics[self._i], avmr)
+            self._i += 1
+
+        self._patcher = mock.patch(
+            __name__ + ".async_model_actions.AsyncViewMetricsRetriever.fetch",
+            fetch_patch)
+
+    def __enter__(self):
+        self._patcher.start()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._patcher.stop()
+
+
 class AsyncAllViewMetricsRetrieverUnitTaseCase(unittest.TestCase):
     """A collection of unit tests for the AsyncAllViewMetricsRetriever class."""
 
@@ -846,3 +868,24 @@ class AsyncAllViewMetricsRetrieverUnitTaseCase(unittest.TestCase):
 
             callback.assert_called_once_with(True, [], aavmr)
             self.assertEqual(type(aavmr).FFD_NO_DESIGN_DOCS_IN_DATABASE, aavmr.fetch_failure_detail)
+
+    def test_fetch_error_fetching_view_metrics(self):
+        the_is_ok = True
+        the_is_conflict = False
+        the_response_body = {
+            'rows': [
+                {'key': '_design/fruit_by_fruit_id'},
+            ]
+        }
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+            with AsyncViewMetricsRetrieverPatcher([False], [None]):
+
+                callback = mock.Mock()
+
+                aavmr = AsyncAllViewMetricsRetriever()
+                aavmr.fetch(callback)
+
+                callback.assert_called_once_with(False, None, aavmr)
+                self.assertEqual(type(aavmr).FFD_ERROR_FETCHING_VIEW_METRICS, aavmr.fetch_failure_detail)
