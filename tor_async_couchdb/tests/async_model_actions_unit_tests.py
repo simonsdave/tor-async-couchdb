@@ -78,7 +78,6 @@ class CouchDBAsyncHTTPClientTestCase(unittest.TestCase):
             ac.create_model_from_doc,
             the_create_model_from_doc)
 
-    @unittest.skip('assert_called_once_with() failing')
     def test_happy_path_with_no_time_info(self):
         response = mock.Mock()
         response.code = httplib.OK
@@ -99,7 +98,7 @@ class CouchDBAsyncHTTPClientTestCase(unittest.TestCase):
             with mock.patch(__name__ + '.async_model_actions._logger') as logger_patch:
                 callback = mock.Mock()
                 the_ac.fetch(response.request, callback)
-                callback.assert_called_once_with(True, False, [], None, None, the_ac)
+                callback.assert_called_once_with(True, False, {}, None, None, the_ac)
 
                 self.assertEqual(
                     logger_patch.error.call_args_list,
@@ -119,7 +118,6 @@ class CouchDBAsyncHTTPClientTestCase(unittest.TestCase):
                     logger_patch.info.call_args_list,
                     [mock.call(expected_info_message)])
 
-    @unittest.skip('assert_called_once_with() failing')
     def test_happy_path_with_time_info(self):
         response = mock.Mock()
         response.code = httplib.OK
@@ -148,7 +146,7 @@ class CouchDBAsyncHTTPClientTestCase(unittest.TestCase):
             with mock.patch(__name__ + '.async_model_actions._logger') as logger_patch:
                 callback = mock.Mock()
                 the_ac.fetch(response.request, callback)
-                callback.assert_called_once_with(True, False, [], None, None, the_ac)
+                callback.assert_called_once_with(True, False, {}, None, None, the_ac)
 
                 self.assertEqual(
                     logger_patch.error.call_args_list,
