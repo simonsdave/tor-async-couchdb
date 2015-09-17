@@ -727,12 +727,12 @@ class AsyncAllViewMetricsRetriever(AsyncAction):
     def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
         assert is_conflict is False
         if not is_ok:
-            self._call_callback(False, type(self).FFD_ERROR_TALKING_TO_COUCHDB)
+            self._call_callback(type(self).FFD_ERROR_TALKING_TO_COUCHDB)
             return
 
         rows = response_body.get("rows", [])
         if not rows:
-            self._call_callback(True, type(self).FFD_NO_DESIGN_DOCS_IN_DATABASE)
+            self._call_callback(type(self).FFD_NO_DESIGN_DOCS_IN_DATABASE)
             return
 
         for row in rows:
@@ -743,17 +743,21 @@ class AsyncAllViewMetricsRetriever(AsyncAction):
 
     def _on_avmr_fetch_done(self, is_ok, view_metrics, avmr):
         if not is_ok:
-            self._call_callback(False, type(self).FFD_ERROR_FETCHING_VIEW_METRICS)
+            self._call_callback(type(self).FFD_ERROR_FETCHING_VIEW_METRICS)
             return
 
         self._todo.remove(view_metrics.design_doc)
         self._done.append(view_metrics)
 
-        self._call_callback(True, type(self).FFD_OK)
+        self._call_callback(type(self).FFD_OK)
 
-    def _call_callback(self, is_ok, fetch_failure_detail):
+    def _call_callback(self, fetch_failure_detail):
         if not self._callback:
+            # results have already been sent to caller even though
+            # we're still getting responses back from CouchDB
             return
+
+        is_ok = not bool(fetch_failure_detail & type(self).FFD_ERROR)
 
         if not is_ok:
             assert self.fetch_failure_detail is None
@@ -801,7 +805,7 @@ class AsyncViewMetricsRetriever(AsyncAction):
     def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, cac):
         assert is_conflict is False
         if not is_ok:
-            self._call_callback(False, type(self).FFD_ERROR_TALKING_TO_COUCHDB)
+            self._call_callback(type(self).FFD_ERROR_TALKING_TO_COUCHDB)
             return
 
         view_index = response_body.get('view_index', {})
@@ -809,15 +813,15 @@ class AsyncViewMetricsRetriever(AsyncAction):
         disk_size = view_index.get('disk_size')
         cls = type(self)
         self._call_callback(
-            True,
             cls.FFD_OK if data_size is not None and disk_size is not None else cls.FFD_INVALID_RESPONSE_BODY,
             data_size,
             disk_size)
 
-    def _call_callback(self, is_ok, fdd, data_size=None, disk_size=None):
+    def _call_callback(self, fetch_failure_detail, data_size=None, disk_size=None):
         assert self._callback is not None
         assert self.fetch_failure_detail is None
-        self.fetch_failure_detail = fdd
+        self.fetch_failure_detail = fetch_failure_detail
+        is_ok = not bool(self.fetch_failure_detail & type(self).FFD_ERROR)
         self._callback(
             is_ok,
             ViewMetrics(self.design_doc, data_size, disk_size) if is_ok else None,
