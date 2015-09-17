@@ -938,3 +938,35 @@ class AsyncAllViewMetricsRetrieverUnitTaseCase(unittest.TestCase):
 
                 callback.assert_called_once_with(False, None, aavmr)
                 self.assertEqual(type(aavmr).FFD_ERROR_FETCHING_VIEW_METRICS, aavmr.fetch_failure_detail)
+
+    def test_all_good(self):
+        the_is_ok = True
+        the_is_conflict = False
+        the_design_doc_1 = "fruit_by_fruit_id"
+        the_design_doc_2 = "fruit_by_fruit"
+        the_response_body = {
+            'rows': [
+                {'key': '_design/%s' % the_design_doc_1},
+                {'key': '_design/%s' % the_design_doc_2},
+            ]
+        }
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+            view_metrics = [
+                ViewMetrics(the_design_doc_1, 42, 92),
+                ViewMetrics(the_design_doc_2, 90, 120),
+            ]
+            is_oks = [
+                True,
+                True,
+            ]
+            with AsyncViewMetricsRetrieverPatcher(is_oks, view_metrics):
+
+                callback = mock.Mock()
+
+                aavmr = AsyncAllViewMetricsRetriever()
+                aavmr.fetch(callback)
+
+                callback.assert_called_once_with(True, view_metrics, aavmr)
+                self.assertEqual(type(aavmr).FFD_OK, aavmr.fetch_failure_detail)
