@@ -611,8 +611,16 @@ class DatabaseMetrics(object):
 class AsyncStatsRetriever(AsyncAction):
     """Async'ly retrieve stats on the CouchDB database."""
 
+    # FDD = Fetch Failure Details
+    FFD_OK = 0x0000
+    FFD_ERROR = 0x0080
+    FFD_ERROR_TALKING_TO_COUCHDB = FFD_ERROR | 0x0001
+    FFD_ERROR_GETTING_VIEW_METRICS = FFD_ERROR | 0x0002
+
     def __init__(self, async_state=None):
         AsyncAction.__init__(self, async_state)
+
+        self.fetch_failure_detail = None
 
         self._callback = None
 
@@ -628,7 +636,7 @@ class AsyncStatsRetriever(AsyncAction):
     def _on_cac_db_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
         assert is_conflict is False
         if not is_ok:
-            self._call_callback(is_ok)
+            self._call_callback(type(self).FFD_ERROR_TALKING_TO_COUCHDB)
             return
 
         async_state = (
@@ -639,18 +647,25 @@ class AsyncStatsRetriever(AsyncAction):
         aaddmr = AsyncAllViewMetricsRetriever(async_state)
         aaddmr.fetch(self._on_aaddmr_fetch_done)
 
-    def _on_aaddmr_fetch_done(self, is_ok, design_doc_metrics, aaddmr):
+    def _on_aaddmr_fetch_done(self, is_ok, view_metrics, aaddmr):
+        if not is_ok:
+            self._call_callback(type(self).FFD_ERROR_GETTING_VIEW_METRICS)
+            return
+
         (doc_count, data_size, disk_size) = aaddmr.async_state
         database_metrics = DatabaseMetrics(
             database,
             doc_count,
             data_size,
             disk_size,
-            design_doc_metrics)
-        self._call_callback(is_ok, database_metrics)
+            view_metrics)
+        self._call_callback(type(self).FFD_OK, database_metrics)
 
-    def _call_callback(self, is_ok, database_metrics=None):
+    def _call_callback(self, fetch_failure_detail, database_metrics=None):
         assert self._callback is not None
+        assert self.fetch_failure_detail is None
+        self.fetch_failure_detail = fetch_failure_detail
+        is_ok = not bool(self.fetch_failure_detail & type(self).FFD_ERROR)
         self._callback(
             is_ok,
             database_metrics if is_ok else None,

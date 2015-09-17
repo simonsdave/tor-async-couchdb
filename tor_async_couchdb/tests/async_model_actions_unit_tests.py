@@ -14,6 +14,7 @@ from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
 from ..async_model_actions import AsyncCouchDBHealthCheck
+from ..async_model_actions import AsyncStatsRetriever
 from ..async_model_actions import AsyncViewMetricsRetriever
 from ..async_model_actions import BaseAsyncModelRetriever
 from ..async_model_actions import CouchDBAsyncHTTPClient
@@ -970,3 +971,98 @@ class AsyncAllViewMetricsRetrieverUnitTaseCase(unittest.TestCase):
 
                 callback.assert_called_once_with(True, view_metrics, aavmr)
                 self.assertEqual(type(aavmr).FFD_OK, aavmr.fetch_failure_detail)
+
+
+class AsyncAllViewMetricsRetrieverPatcher(object):
+
+    def __init__(self, is_ok, view_metrics):
+
+        def fetch_patch(aavmr, callback):
+            callback(is_ok, view_metrics, aavmr)
+
+        self._patcher = mock.patch(
+            __name__ + ".async_model_actions.AsyncAllViewMetricsRetriever.fetch",
+            fetch_patch)
+
+    def __enter__(self):
+        self._patcher.start()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._patcher.stop()
+
+
+class AsyncStatsRetrieverUnitTaseCase(unittest.TestCase):
+    """A collection of unit tests for the AsyncStatsRetriever class."""
+
+    def test_ctr_with_async_state(self):
+        the_async_state = mock.Mock()
+        asr = AsyncStatsRetriever(the_async_state)
+        self.assertIsNone(asr.fetch_failure_detail)
+        self.assertTrue(asr.async_state is the_async_state)
+
+    def test_ctr_with_no_async_state(self):
+        asr = AsyncStatsRetriever()
+        self.assertIsNone(asr.fetch_failure_detail)
+        self.assertIsNone(asr.async_state)
+
+    def test_fetch_error_talking_to_couchdb(self):
+        the_is_ok = False
+        the_is_conflict = False
+        the_response_body = None
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+
+            callback = mock.Mock()
+
+            asr = AsyncStatsRetriever()
+            asr.fetch(callback)
+
+            callback.assert_called_once_with(False, None, asr)
+            self.assertEqual(type(asr).FFD_ERROR_TALKING_TO_COUCHDB, asr.fetch_failure_detail)
+
+    def test_fetch_error_getting_view_metrics(self):
+        the_is_ok = True
+        the_is_conflict = False
+        the_response_body = {}
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+            with AsyncAllViewMetricsRetrieverPatcher(False, None):
+                callback = mock.Mock()
+
+                asr = AsyncStatsRetriever()
+                asr.fetch(callback)
+
+                callback.assert_called_once_with(False, None, asr)
+                self.assertEqual(type(asr).FFD_ERROR_GETTING_VIEW_METRICS, asr.fetch_failure_detail)
+
+    def test_happy_path(self):
+        the_is_ok = True
+        the_is_conflict = False
+        the_response_body = {
+            "doc_count": 42,
+            "data_size": 43,
+            "disk_size": 44,
+        }
+        the_id = None
+        the_rev = None
+        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_response_body, the_id, the_rev):
+            the_view_metrics = mock.Mock()
+            with AsyncAllViewMetricsRetrieverPatcher(True, the_view_metrics):
+                callback = mock.Mock()
+
+                asr = AsyncStatsRetriever()
+                asr.fetch(callback)
+
+                self.assertEqual(1, callback.call_count)
+                self.assertTrue(callback.call_args[0][0] is True)
+                database_metrics = callback.call_args[0][1]
+                self.assertIsNotNone(database_metrics)
+                self.assertIsNotNone(database_metrics.doc_count is the_response_body["doc_count"])
+                self.assertIsNotNone(database_metrics.data_size is the_response_body["data_size"])
+                self.assertIsNotNone(database_metrics.disk_size is the_response_body["disk_size"])
+                self.assertIsNotNone(database_metrics.view_metrics is the_view_metrics)
+                self.assertTrue(callback.call_args[0][2] is asr)
+                self.assertEqual(type(asr).FFD_OK, asr.fetch_failure_detail)
