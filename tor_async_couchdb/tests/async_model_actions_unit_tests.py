@@ -624,6 +624,25 @@ class AsyncDeleterUnitTaseCase(unittest.TestCase):
             callback.assert_called_once_with(True, False, ad)
 
 
+class AsyncDatabaseMetricsRetrieverPatcher(object):
+
+    def __init__(self, is_ok, database_metrics):
+
+        def fetch_patch(admr, callback):
+            callback(is_ok, database_metrics, admr)
+
+        self._patcher = mock.patch(
+            __name__ + ".async_model_actions.AsyncDatabaseMetricsRetriever.fetch",
+            fetch_patch)
+
+    def __enter__(self):
+        self._patcher.start()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._patcher.stop()
+
+
 class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
     """A collection of unit tests for the AsyncCouchDBHealthCheck class."""
 
@@ -639,35 +658,23 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
 
         self.assertIsNone(aushc.async_state)
 
+    def test_error_fetching_database_metrics(self):
+        with AsyncDatabaseMetricsRetrieverPatcher(False, None):
+            callback = mock.Mock()
+
+            the_aushc = AsyncCouchDBHealthCheck()
+            the_aushc.check(callback)
+
+            callback.called_once_with(False, the_aushc)
+
     def test_all_good(self):
-        the_is_ok = True
-        the_is_conflict = False
-        the_models = {}
-        the_id = None
-        the_rev = None
-        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
+        with AsyncDatabaseMetricsRetrieverPatcher(True, mock.Mock()):
+            callback = mock.Mock()
+
             the_aushc = AsyncCouchDBHealthCheck()
-
-            def callback(is_ok, aushc):
-                self.assertTrue(is_ok)
-                self.assertTrue(aushc is the_aushc)
-
             the_aushc.check(callback)
 
-    def test_unreachable_couchdb(self):
-        the_is_ok = False
-        the_is_conflict = False
-        the_models = {}
-        the_id = None
-        the_rev = None
-        with CouchDBAsyncHTTPClientPatcher(the_is_ok, the_is_conflict, the_models, the_id, the_rev):
-            the_aushc = AsyncCouchDBHealthCheck()
-
-            def callback(is_ok, aushc):
-                self.assertFalse(is_ok)
-                self.assertTrue(aushc is the_aushc)
-
-            the_aushc.check(callback)
+            callback.called_once_with(True, the_aushc)
 
 
 class ViewMetricsUnitTaseCase(unittest.TestCase):

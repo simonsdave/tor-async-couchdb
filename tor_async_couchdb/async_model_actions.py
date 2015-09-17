@@ -545,13 +545,10 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         assert not self._callback
         self._callback = callback
 
-        request = CouchDBAsyncHTTPRequest("", "GET", None)
+        admr = AsyncDatabaseMetricsRetriever()
+        admr.fetch(self._on_admr_fetch_done)
 
-        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
-        cac.fetch(request, self._on_cac_fetch_done)
-
-    def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, cac):
-        assert is_conflict is False
+    def _on_admr_fetch_done(self, is_ok, database_metrics, admr):
         self._call_callback(is_ok)
 
     def _call_callback(self, is_ok):
