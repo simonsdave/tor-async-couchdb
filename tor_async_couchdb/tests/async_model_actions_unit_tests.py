@@ -14,7 +14,7 @@ from ..async_model_actions import AsyncModelRetriever
 from ..async_model_actions import AsyncModelsRetriever
 from ..async_model_actions import AsyncPersister
 from ..async_model_actions import AsyncCouchDBHealthCheck
-from ..async_model_actions import AsyncStatsRetriever
+from ..async_model_actions import AsyncDatabaseMetricsRetriever
 from ..async_model_actions import AsyncViewMetricsRetriever
 from ..async_model_actions import BaseAsyncModelRetriever
 from ..async_model_actions import CouchDBAsyncHTTPClient
@@ -992,19 +992,19 @@ class AsyncAllViewMetricsRetrieverPatcher(object):
         self._patcher.stop()
 
 
-class AsyncStatsRetrieverUnitTaseCase(unittest.TestCase):
-    """A collection of unit tests for the AsyncStatsRetriever class."""
+class AsyncDatabaseMetricsRetrieverUnitTaseCase(unittest.TestCase):
+    """A collection of unit tests for the AsyncDatabaseMetricsRetriever class."""
 
     def test_ctr_with_async_state(self):
         the_async_state = mock.Mock()
-        asr = AsyncStatsRetriever(the_async_state)
-        self.assertIsNone(asr.fetch_failure_detail)
-        self.assertTrue(asr.async_state is the_async_state)
+        admr = AsyncDatabaseMetricsRetriever(the_async_state)
+        self.assertIsNone(admr.fetch_failure_detail)
+        self.assertTrue(admr.async_state is the_async_state)
 
     def test_ctr_with_no_async_state(self):
-        asr = AsyncStatsRetriever()
-        self.assertIsNone(asr.fetch_failure_detail)
-        self.assertIsNone(asr.async_state)
+        admr = AsyncDatabaseMetricsRetriever()
+        self.assertIsNone(admr.fetch_failure_detail)
+        self.assertIsNone(admr.async_state)
 
     def test_fetch_error_talking_to_couchdb(self):
         the_is_ok = False
@@ -1016,11 +1016,11 @@ class AsyncStatsRetrieverUnitTaseCase(unittest.TestCase):
 
             callback = mock.Mock()
 
-            asr = AsyncStatsRetriever()
-            asr.fetch(callback)
+            admr = AsyncDatabaseMetricsRetriever()
+            admr.fetch(callback)
 
-            callback.assert_called_once_with(False, None, asr)
-            self.assertEqual(type(asr).FFD_ERROR_TALKING_TO_COUCHDB, asr.fetch_failure_detail)
+            callback.assert_called_once_with(False, None, admr)
+            self.assertEqual(type(admr).FFD_ERROR_TALKING_TO_COUCHDB, admr.fetch_failure_detail)
 
     def test_fetch_error_getting_view_metrics(self):
         the_is_ok = True
@@ -1032,11 +1032,11 @@ class AsyncStatsRetrieverUnitTaseCase(unittest.TestCase):
             with AsyncAllViewMetricsRetrieverPatcher(False, None):
                 callback = mock.Mock()
 
-                asr = AsyncStatsRetriever()
-                asr.fetch(callback)
+                admr = AsyncDatabaseMetricsRetriever()
+                admr.fetch(callback)
 
-                callback.assert_called_once_with(False, None, asr)
-                self.assertEqual(type(asr).FFD_ERROR_GETTING_VIEW_METRICS, asr.fetch_failure_detail)
+                callback.assert_called_once_with(False, None, admr)
+                self.assertEqual(type(admr).FFD_ERROR_GETTING_VIEW_METRICS, admr.fetch_failure_detail)
 
     def test_happy_path(self):
         the_is_ok = True
@@ -1053,8 +1053,8 @@ class AsyncStatsRetrieverUnitTaseCase(unittest.TestCase):
             with AsyncAllViewMetricsRetrieverPatcher(True, the_view_metrics):
                 callback = mock.Mock()
 
-                asr = AsyncStatsRetriever()
-                asr.fetch(callback)
+                admr = AsyncDatabaseMetricsRetriever()
+                admr.fetch(callback)
 
                 self.assertEqual(1, callback.call_count)
                 self.assertTrue(callback.call_args[0][0] is True)
@@ -1064,5 +1064,5 @@ class AsyncStatsRetrieverUnitTaseCase(unittest.TestCase):
                 self.assertIsNotNone(database_metrics.data_size is the_response_body["data_size"])
                 self.assertIsNotNone(database_metrics.disk_size is the_response_body["disk_size"])
                 self.assertIsNotNone(database_metrics.view_metrics is the_view_metrics)
-                self.assertTrue(callback.call_args[0][2] is asr)
-                self.assertEqual(type(asr).FFD_OK, asr.fetch_failure_detail)
+                self.assertTrue(callback.call_args[0][2] is admr)
+                self.assertEqual(type(admr).FFD_OK, admr.fetch_failure_detail)

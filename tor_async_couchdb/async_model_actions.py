@@ -577,6 +577,10 @@ def _fragmentation(data_size, disk_size):
 
 
 class ViewMetrics(object):
+    """An instance of this class contains metrics which describe
+    both the shape and health of a view in a CouchDB databse.
+    Instances of this class are created by ```AsyncViewMetricsRetriever```.
+    """
 
     def __init__(self, design_doc, data_size, disk_size):
         object.__init__(self)
@@ -592,6 +596,10 @@ class ViewMetrics(object):
 
 
 class DatabaseMetrics(object):
+    """An instance of this class contains metrics which describe
+    both the shape and health of a CouchDB databse. Instances of
+    this class are created by ```AsyncDatabaseMetricsRetriever```.
+    """
 
     def __init__(self, database, doc_count, data_size, disk_size, view_metrics):
         object.__init__(self)
@@ -608,8 +616,8 @@ class DatabaseMetrics(object):
         return _fragmentation(self.data_size, self.disk_size)
 
 
-class AsyncStatsRetriever(AsyncAction):
-    """Async'ly retrieve stats on the CouchDB database."""
+class AsyncDatabaseMetricsRetriever(AsyncAction):
+    """Async'ly retrieve metrics for the CouchDB database."""
 
     # FDD = Fetch Failure Details
     FFD_OK = 0x0000
