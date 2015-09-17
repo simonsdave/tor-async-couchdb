@@ -133,6 +133,6 @@ class DatabaseMetricsIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         return tornado.web.Application(handlers=handlers)
 
     def test_all_good(self):
-        with DatabaseCreator(number_design_docs=20, create=True, delete=True):
+        with DatabaseCreator(number_design_docs=50, create=True, delete=True):
             response = self.fetch(RequestHandler.get_url_spec, method="GET")
             self.assertEqual(response.code, httplib.OK)
