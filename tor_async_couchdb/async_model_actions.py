@@ -46,13 +46,13 @@ validate_cert = True
 ```healthy_database_fragmentation_threshold```
 then it's considered healthy.
 """
-healthy_database_fragmentation_threshold = 50
+healthy_database_fragmentation_threshold = 80
 
 """If the view's fragmentation is less than
 ```healthy_view_fragmentation_threshold```
 then it's considered healthy.
 """
-healthy_view_fragmentation_threshold = 50
+healthy_view_fragmentation_threshold = 80
 
 """Database and view fragmentation health one of FRAG_HEALTH_OK,
 FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD."""
