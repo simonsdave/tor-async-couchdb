@@ -100,7 +100,7 @@ class RequestHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self):
 
-        def on_check_done(is_ok, ahc):
+        def on_check_done(is_ok, database_metrics, ahc):
             self.set_status(httplib.OK if is_ok else httplib.SERVICE_UNAVAILABLE)
             self.finish()
 

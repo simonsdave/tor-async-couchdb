@@ -67,6 +67,13 @@ _doc_type_reg_ex = re.compile(
     re.IGNORECASE)
 
 
+"""If the database's fragmentation is less than
+```healthy_database_fragmentation_threshold```
+then it's considered healthy.
+"""
+healthy_database_fragmentation_threshold = 50
+
+
 class CouchDBAsyncHTTPRequest(tornado.httpclient.HTTPRequest):
     """```CouchDBAsyncHTTPRequest``` extends ```tornado.httpclient.HTTPRequest```
     adding ...
@@ -549,11 +556,24 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         admr.fetch(self._on_admr_fetch_done)
 
     def _on_admr_fetch_done(self, is_ok, database_metrics, admr):
-        self._call_callback(is_ok)
+        if not is_ok:
+            self._call_callback(False, database_metrics)
+            return
 
-    def _call_callback(self, is_ok):
+        if 50 < database_metrics.fragmentation:
+            self._call_callback(False, database_metrics)
+            return
+
+        for view_metrics in database_metrics.view_metrics:
+            if 50 < view_metrics.fragmentation:
+                self._call_callback(False, database_metrics)
+                return
+
+        self._call_callback(True, database_metrics)
+
+    def _call_callback(self, is_ok, database_metrics):
         assert self._callback is not None
-        self._callback(is_ok, self)
+        self._callback(is_ok, database_metrics, self)
         self._callback = None
 
 
@@ -571,6 +591,16 @@ def _fragmentation(data_size, disk_size):
     if data_size is None or disk_size is None:
         return None
     return int(((disk_size - float(data_size)) / disk_size) * 100.0)
+
+
+FRAG_HEALTH_OK = 0x0001
+FRAG_HEALTH_AT_RISK = 0x0002
+FRAG_HEALTH_BAD = 0x0003
+
+def _fragmentation_health(fragmentation, healthy_fragmentation_threshold):
+    if healthy_fragmentation_threshold < fragmentation:
+        return FRAG_HEALTH_BAD
+    return FRAG_HEALTH_OK
 
 
 class ViewMetrics(object):
@@ -611,6 +641,16 @@ class DatabaseMetrics(object):
     def fragmentation(self):
         """The database's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
+
+    @property
+    def fragmentation_health(self):
+        """Returns ```True``` if the database's fragmentation
+        is healthy ie if the database's fragmentation is below
+        the healthy database fragmentation threshold.
+        """
+        return _fragmentation_health(
+            healthy_database_fragmentation_threshold,
+            self.fragmentation)
 
 
 class AsyncDatabaseMetricsRetriever(AsyncAction):

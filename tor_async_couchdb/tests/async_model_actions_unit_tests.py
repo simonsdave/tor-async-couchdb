@@ -665,16 +665,17 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
             the_aushc = AsyncCouchDBHealthCheck()
             the_aushc.check(callback)
 
-            callback.called_once_with(False, the_aushc)
+            callback.called_once_with(False, None, the_aushc)
 
     def test_all_good(self):
-        with AsyncDatabaseMetricsRetrieverPatcher(True, mock.Mock()):
+        the_database_metrics = mock.Mock()
+        with AsyncDatabaseMetricsRetrieverPatcher(True, the_database_metrics):
             callback = mock.Mock()
 
             the_aushc = AsyncCouchDBHealthCheck()
             the_aushc.check(callback)
 
-            callback.called_once_with(True, the_aushc)
+            callback.called_once_with(True, the_database_metrics, the_aushc)
 
 
 class ViewMetricsUnitTaseCase(unittest.TestCase):

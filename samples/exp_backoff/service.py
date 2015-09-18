@@ -145,6 +145,12 @@ class HealthRequestHandler(tornado.web.RequestHandler):
         "^(false|f|n|no|0)$",
         re.IGNORECASE)
 
+    _frag_health_to_status = {
+        async_model_actions.FRAG_HEALTH_OK: "green",
+        async_model_actions.FRAG_HEALTH_AT_RISK: "yellow",
+        async_model_actions.FRAG_HEALTH_BAD: "red",
+    }
+
     url_spec = r"/v1.0/_health"
 
     @tornado.web.asynchronous
@@ -162,10 +168,10 @@ class HealthRequestHandler(tornado.web.RequestHandler):
         acdbhc = async_model_actions.AsyncCouchDBHealthCheck()
         acdbhc.check(self._get_on_acdbhc_check_done)
 
-    def _get_on_acdbhc_check_done(self, is_ok, acdbhc):
-        self._write_response(is_ok)
+    def _get_on_acdbhc_check_done(self, is_ok, database_metrics, acdbhc):
+        self._write_response(is_ok, database_metrics)
 
-    def _write_response(self, is_ok):
+    def _write_response(self, is_ok, database_metrics=None):
         location = "%s://%s%s" % (
             self.request.protocol,
             self.request.host,
@@ -180,6 +186,14 @@ class HealthRequestHandler(tornado.web.RequestHandler):
                 },
             },
         }
+
+        if database_metrics is not None:
+            body["database"] = {
+                "fragmentation": {
+                    "status": type(self)._frag_health_to_status[database_metrics.fragmentation_health],
+                }
+            }
+
         self.write(body)
 
         self.set_header("location", location)
