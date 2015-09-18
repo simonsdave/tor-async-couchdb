@@ -1,4 +1,4 @@
-#Samples
+# Samples
 The samples below demonstrate how to use the capabilities
 of ```tor-async-couchdb```.
 The first sample ([basic sample](basic)) is very simple and uses only the fundamental
@@ -15,43 +15,51 @@ style of paradigm.
 	* service.py contains all Tornado request handlers and the service's mainline - request handlers
 	  create instances of async actions to async'ly operate on models (DCI's *context*)
 
-##[basic](basic)
+## [basic](basic)
 This service implements a simple RESTful service that
 demonstrates how the foundational features of ```tor-async-couchdb```
 are intended to be used.
 
-##[retry](retry)
+## [retry](retry)
 This service implements a simple RESTful service that
 builds on the [basic](basic) sample.
 Specifically, this sample illustrates how
 to implement on-write retry logic that works with CouchDB's
 Multi-Version Concurrency Control (MVCC) approach to conflicts.
 
-##[exponential backoff](exp_backoff)
+## [exponential backoff](exp_backoff)
 This service implements a simple RESTful service that
 builds on the [retry](retry) sample.
 Specifically, this sample illustrates how
 to refine [retry](retry)'s retry logic using
 and an exponential backoff strategy.
 
-##multi-master
+## multi-master
 WIP
 
-##tampering
+## [health](health)
+As described in [these](https://github.com/simonsdave/microservice-architecture)
+architectural guidelines, all services should implement a ```/_health```
+endpoint.
+The [exponential backoff](exp_backoff) sample includes an implementation
+of a ```/_health``` endpoint that follows these architectural guidelines
+demonstrating how to use the ```AsyncCouchDBHealthCheck``` class.
+
+## tampering
 WIP
 
-##hash and encrypt
+## hash and encrypt
 WIP
 
-#Utilities
+# Utilities
 
-##[db_installer](db_installer)
+## [db_installer](db_installer)
 [db_installer](db_installer) demonstrates how to use ```tor-async-couchdb```
 to create a CouchDB database installer. The database created by
 the installer is used for each of the ```tor-async-couchdb```
 samples.
 
-##[tests.py](tests.py)
+## [tests.py](tests.py)
 Once you have spun up one of the sample services you can run
 a sanity test suite against the service using a
 [nose](https://nose.readthedocs.org/en/latest/) runnable
@@ -71,7 +79,7 @@ OK
 >
 ```
 
-##[loadgen](loadgen)
+## [loadgen](loadgen)
 A [locust](http://locust.io/) based utility which drives CRUD style
 load through the sample services to demonstrate ```tor-async-couchdb```'s
 conflict resolution logic.
