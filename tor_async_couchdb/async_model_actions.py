@@ -42,21 +42,29 @@ This config option is very useful when CouchDB self-signed certs.
 """
 validate_cert = True
 
-"""Think of the fragmentation metric is that it's
-a measure of the % of the database or view that's used
-to store old documents and their associated metadata.
-
-See
-https://wiki.apache.org/couchdb/Compaction
-and
-http://docs.couchdb.org/en/latest/config/compaction.html#compaction-daemon-rules
-for details on fragmentation calculation.
-
-The comes a point when there's too much old stuff
-hanging around in a database and/or view ie the fragmentation
-level passes some threshold.
+"""If the database's fragmentation is less than
+```healthy_database_fragmentation_threshold```
+then it's considered healthy.
 """
+healthy_database_fragmentation_threshold = 50
 
+"""If the view's fragmentation is less than
+```healthy_view_fragmentation_threshold```
+then it's considered healthy.
+"""
+healthy_view_fragmentation_threshold = 50
+
+"""Database and view fragmentation health one of FRAG_HEALTH_OK,
+FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD."""
+FRAG_HEALTH_OK = 0x0001
+
+"""Database and view fragmentation health one of FRAG_HEALTH_OK,
+FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD."""
+FRAG_HEALTH_AT_RISK = 0x0002
+
+"""Database and view fragmentation health one of FRAG_HEALTH_OK,
+FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD."""
+FRAG_HEALTH_BAD = 0x0003
 
 """```_doc_type_reg_ex``` is used to verify the format of the
 type property for each document before the document is written
@@ -66,12 +74,37 @@ _doc_type_reg_ex = re.compile(
     r"^[^\s]+_v\d+\.\d+$",
     re.IGNORECASE)
 
+"""just used to improve code readability"""
+_one_meg_in_bytes = 1 * 1024 * 1024
 
-"""If the database's fragmentation is less than
-```healthy_database_fragmentation_threshold```
-then it's considered healthy.
-"""
-healthy_database_fragmentation_threshold = 50
+
+def _fragmentation(data_size, disk_size):
+    """Think of the fragmentation metric is that it's
+    a measure of the % of the database or view that's used
+    to store old documents and their associated metadata.
+
+    See
+    https://wiki.apache.org/couchdb/Compaction
+    and
+    http://docs.couchdb.org/en/latest/config/compaction.html#compaction-daemon-rules
+    for details on fragmentation calculation.
+    """
+    if data_size is None or disk_size is None:
+        return None
+    return int(((disk_size - float(data_size)) / disk_size) * 100.0)
+
+
+def _fragmentation_health(fragmentation, disk_size, healthy_fragmentation_threshold):
+    """See _fragmentation() for a def'n of fragmenation.
+    If ```disk_size``` is less than 1 MB the FRAG_HEALTH_OK
+    is always returned. One of FRAG_HEALTH_OK, FRAG_HEALTH_AT_RISK,
+    or FRAG_HEALTH_BAD is returned.
+    """
+    if disk_size < _one_meg_in_bytes:
+        return FRAG_HEALTH_OK
+    if healthy_fragmentation_threshold < fragmentation:
+        return FRAG_HEALTH_BAD
+    return FRAG_HEALTH_OK
 
 
 class CouchDBAsyncHTTPRequest(tornado.httpclient.HTTPRequest):
@@ -560,12 +593,12 @@ class AsyncCouchDBHealthCheck(AsyncAction):
             self._call_callback(False, database_metrics)
             return
 
-        if 50 < database_metrics.fragmentation:
+        if FRAG_HEALTH_OK != database_metrics.fragmentation_health:
             self._call_callback(False, database_metrics)
             return
 
         for view_metrics in database_metrics.view_metrics:
-            if 50 < view_metrics.fragmentation:
+            if FRAG_HEALTH_OK != view_metrics.fragmentation_health:
                 self._call_callback(False, database_metrics)
                 return
 
@@ -575,32 +608,6 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         assert self._callback is not None
         self._callback(is_ok, database_metrics, self)
         self._callback = None
-
-
-def _fragmentation(data_size, disk_size):
-    """Think of the fragmentation metric is that it's
-    a measure of the % of the database or view that's used
-    to store old documents and their associated metadata.
-
-    See
-    https://wiki.apache.org/couchdb/Compaction
-    and
-    http://docs.couchdb.org/en/latest/config/compaction.html#compaction-daemon-rules
-    for details on fragmentation calculation.
-    """
-    if data_size is None or disk_size is None:
-        return None
-    return int(((disk_size - float(data_size)) / disk_size) * 100.0)
-
-
-FRAG_HEALTH_OK = 0x0001
-FRAG_HEALTH_AT_RISK = 0x0002
-FRAG_HEALTH_BAD = 0x0003
-
-def _fragmentation_health(fragmentation, healthy_fragmentation_threshold):
-    if healthy_fragmentation_threshold < fragmentation:
-        return FRAG_HEALTH_BAD
-    return FRAG_HEALTH_OK
 
 
 class ViewMetrics(object):
@@ -620,6 +627,17 @@ class ViewMetrics(object):
     def fragmentation(self):
         """The view's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
+
+    @property
+    def fragmentation_health(self):
+        """Returns one of FRAG_HEALTH_OK, FRAG_HEALTH_AT_RISK or
+        FRAG_HEALTH_BAD to indicated the view's fragmentation
+        health.
+        """
+        return _fragmentation_health(
+            healthy_view_fragmentation_threshold,
+            self.disk_size,
+            self.fragmentation)
 
 
 class DatabaseMetrics(object):
@@ -644,12 +662,13 @@ class DatabaseMetrics(object):
 
     @property
     def fragmentation_health(self):
-        """Returns ```True``` if the database's fragmentation
-        is healthy ie if the database's fragmentation is below
-        the healthy database fragmentation threshold.
+        """Returns one of FRAG_HEALTH_OK, FRAG_HEALTH_AT_RISK or
+        FRAG_HEALTH_BAD to indicated the database's fragmentation
+        health.
         """
         return _fragmentation_health(
             healthy_database_fragmentation_threshold,
+            self.disk_size,
             self.fragmentation)
 
 
