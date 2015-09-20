@@ -188,11 +188,13 @@ class HealthRequestHandler(tornado.web.RequestHandler):
         }
 
         if database_metrics is not None:
-            view_status = {view_metrics.design_doc: {"fragmentation": {"status": type(self)._frag_health_to_status[view_metrics.fragmentation_health]}} for view_metrics in database_metrics.view_metrics}
+            view_status = {}
+            for view_metrics in database_metrics.view_metrics:
+                view_status[view_metrics.design_doc] = {
+                    "fragmentationStatus": type(self)._frag_health_to_status[view_metrics.fragmentation_health],
+                }
             body["database"] = {
-                "fragmentation": {
-                    "status": type(self)._frag_health_to_status[database_metrics.fragmentation_health],
-                },
+                "fragmentationStatus": type(self)._frag_health_to_status[database_metrics.fragmentation_health],
                 "views": view_status,
             }
 
