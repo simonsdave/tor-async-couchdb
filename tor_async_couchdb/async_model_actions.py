@@ -91,14 +91,15 @@ def _fragmentation(data_size, disk_size):
     """
     if data_size is None or disk_size is None:
         return None
-    return int(((disk_size - float(data_size)) / disk_size) * 100.0)
+    fragmentation = ((disk_size - float(data_size)) / disk_size) * 100.0
+    return int(round(fragmentation, 0))
 
 
 def _fragmentation_health(fragmentation, disk_size, healthy_fragmentation_threshold):
     """See _fragmentation() for a def'n of fragmenation.
     If ```disk_size``` is less than 1 MB the FRAG_HEALTH_OK
-    is always returned. One of FRAG_HEALTH_OK, FRAG_HEALTH_AT_RISK,
-    or FRAG_HEALTH_BAD is returned.
+    is always returned. Otherwise one of FRAG_HEALTH_OK,
+    FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD is returned.
     """
     if disk_size < _one_meg_in_bytes:
         return FRAG_HEALTH_OK
@@ -635,9 +636,9 @@ class ViewMetrics(object):
         health.
         """
         return _fragmentation_health(
-            healthy_view_fragmentation_threshold,
+            self.fragmentation,
             self.disk_size,
-            self.fragmentation)
+            healthy_view_fragmentation_threshold)
 
 
 class DatabaseMetrics(object):
@@ -667,9 +668,9 @@ class DatabaseMetrics(object):
         health.
         """
         return _fragmentation_health(
-            healthy_database_fragmentation_threshold,
+            self.fragmentation,
             self.disk_size,
-            self.fragmentation)
+            healthy_database_fragmentation_threshold)
 
 
 class AsyncDatabaseMetricsRetriever(AsyncAction):
