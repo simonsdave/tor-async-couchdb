@@ -19,6 +19,7 @@ from async_actions import AsyncFruitRetriever
 from async_actions import AsyncFruitCreator
 from async_actions import AsyncFruitDeleter
 from async_actions import AsyncFruitUpdater
+from tor_async_couchdb.async_model_actions import AsyncDatabaseMetricsRetriever
 
 _logger = logging.getLogger(__name__)
 
@@ -217,16 +218,16 @@ class HealthRequestHandler(tornado.web.RequestHandler):
         return None
 
 
-class StatsRequestHandler(tornado.web.RequestHandler):
+class MetricsRequestHandler(tornado.web.RequestHandler):
 
-    url_spec = r"/v1.0/_stats"
+    url_spec = r"/v1.0/_metrics"
 
     @tornado.web.asynchronous
     def get(self):
-        asr = async_model_actions.AsyncStatsRetriever()
-        asr.fetch(self._on_asr_fetch_done)
+        adbmr = AsyncDatabaseMetricsRetriever()
+        adbmr.fetch(self._on_adbmr_fetch_done)
 
-    def _on_asr_fetch_done(self, is_ok, database_metrics, asr):
+    def _on_adbmr_fetch_done(self, is_ok, database_metrics, adbmr):
         location = "%s://%s%s" % (
             self.request.protocol,
             self.request.host,
@@ -241,18 +242,16 @@ class StatsRequestHandler(tornado.web.RequestHandler):
         }
 
         if database_metrics:
-            body['details'] = {
-                "database": {
-                    "docCount": database_metrics.doc_count,
-                    "dataSize": database_metrics.data_size,
-                    "diskSize": database_metrics.disk_size,
-                    "fragmentation": database_metrics.fragmentation,
-                    "views": {
-                    }
+            body['database'] = {
+                "docCount": database_metrics.doc_count,
+                "dataSize": database_metrics.data_size,
+                "diskSize": database_metrics.disk_size,
+                "fragmentation": database_metrics.fragmentation,
+                "views": {
                 }
             }
             for view_metrics in database_metrics.view_metrics:
-                body["details"]["database"]["views"][view_metrics.design_doc] = {
+                body["database"]["views"][view_metrics.design_doc] = {
                     "dataSize": view_metrics.data_size,
                     "diskSize": view_metrics.disk_size,
                     "fragmentation": view_metrics.fragmentation,
@@ -332,8 +331,8 @@ if __name__ == "__main__":
             SingleResourceRequestHandler
         ),
         (
-            StatsRequestHandler.url_spec,
-            StatsRequestHandler
+            MetricsRequestHandler.url_spec,
+            MetricsRequestHandler
         ),
         (
             HealthRequestHandler.url_spec,
