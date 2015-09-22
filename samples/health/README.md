@@ -41,7 +41,7 @@ some work but it's really pretty cool to see all the moving pieces
 in action:-) Here's an overview of what we're going to do:
 
 * start the [exponential backoff](../exp_backoff) sample
-* start some [bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell)
+* start some [bash](https://en.wikipedia.org/wiki/Bash_(Unix_shell))
 while loops that query the ```/_health``` endpoint, sleep
 and then repeat the loop - you'll see why more than one while loop
 in a little bit
