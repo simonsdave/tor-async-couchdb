@@ -41,6 +41,43 @@ class MyModelWithBadType(Model):
         return rv
 
 
+class FragmentationHealthThresholdPatcher(object):
+
+    def __init__(self,
+                 database_unhealthy_threshold,
+                 database_at_risk_threshold,
+                 view_unhealthy_threshold,
+                 view_at_risk_threshold):
+        self.database_unhealthy_threshold = database_unhealthy_threshold
+        self.database_at_risk_threshold = database_at_risk_threshold
+        self.view_unhealthy_threshold = view_unhealthy_threshold
+        self.view_at_risk_threshold = view_at_risk_threshold
+
+        self._database_unhealthy_threshold = None
+        self._database_at_risk_threshold = None
+        self._view_unhealthy_threshold = None
+        self._view_at_risk_threshold = None
+
+    def __enter__(self):
+        self._database_unhealthy_threshold = async_model_actions.unhealthy_database_fragmentation_threshold
+        self._database_at_risk_threshold = async_model_actions.at_risk_database_fragmentation_threshold
+        self._view_unhealthy_threshold = async_model_actions.unhealthy_view_fragmentation_threshold
+        self._view_at_risk_threshold = async_model_actions.at_risk_view_fragmentation_threshold
+
+        async_model_actions.unhealthy_database_fragmentation_threshold = self.database_unhealthy_threshold
+        async_model_actions.at_risk_database_fragmentation_threshold = self.database_at_risk_threshold
+        async_model_actions.unhealthy_view_fragmentation_threshold = self.view_unhealthy_threshold
+        async_model_actions.at_risk_view_fragmentation_threshold = self.view_at_risk_threshold
+
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        async_model_actions.unhealthy_database_fragmentation_threshold = self._database_unhealthy_threshold
+        async_model_actions.at_risk_database_fragmentation_threshold = self._database_at_risk_threshold
+        async_model_actions.unhealthy_view_fragmentation_threshold = self._view_unhealthy_threshold
+        async_model_actions.at_risk_view_fragmentation_threshold = self._view_at_risk_threshold
+
+
 class CouchDBAsyncHTTPClientPatcher(object):
 
     def __init__(self, is_ok, is_conflict, models, _id, _rev):
@@ -666,9 +703,49 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
             the_aushc.check(callback)
 
             callback.called_once_with(False, None, the_aushc)
+            self.assertEqual(
+                the_aushc.fetch_failure_detail,
+                AsyncCouchDBHealthCheck.FFD_ERROR_GETTING_DATABASE_METRICS)
+
+    def test_database_fragmentation_not_ok(self):
+        database_metrics = mock.Mock(
+            fragmentation_health=async_model_actions.FRAG_HEALTH_AT_RISK)
+
+        with AsyncDatabaseMetricsRetrieverPatcher(True, database_metrics):
+            callback = mock.Mock()
+
+            the_aushc = AsyncCouchDBHealthCheck()
+            the_aushc.check(callback)
+
+            callback.called_once_with(False, database_metrics, the_aushc)
+            self.assertEqual(
+                the_aushc.fetch_failure_detail,
+                AsyncCouchDBHealthCheck.FFD_DATABASE_FRAGMENTATION_NOT_HEALTHY)
+
+    def test_view_fragmentation_not_ok(self):
+        database_metrics = mock.Mock(
+            fragmentation_health=async_model_actions.FRAG_HEALTH_OK,
+            view_metrics=[
+                mock.Mock(fragmentation_health=async_model_actions.FRAG_HEALTH_OK),
+                mock.Mock(fragmentation_health=async_model_actions.FRAG_HEALTH_OK),
+                mock.Mock(fragmentation_health=async_model_actions.FRAG_HEALTH_AT_RISK),
+            ])
+
+        with AsyncDatabaseMetricsRetrieverPatcher(True, database_metrics):
+            callback = mock.Mock()
+
+            the_aushc = AsyncCouchDBHealthCheck()
+            the_aushc.check(callback)
+
+            callback.called_once_with(False, database_metrics, the_aushc)
+            self.assertEqual(
+                the_aushc.fetch_failure_detail,
+                AsyncCouchDBHealthCheck.FFD_VIEW_FRAGMENTATION_NOT_HEALTHY)
 
     def test_all_good(self):
-        the_database_metrics = mock.Mock()
+        the_database_metrics = mock.Mock(
+            fragmentation_health=async_model_actions.FRAG_HEALTH_OK,
+            view_metrics=[])
         with AsyncDatabaseMetricsRetrieverPatcher(True, the_database_metrics):
             callback = mock.Mock()
 
@@ -676,6 +753,9 @@ class AsyncCouchDBHealthCheckCheckUnitTaseCase(unittest.TestCase):
             the_aushc.check(callback)
 
             callback.called_once_with(True, the_database_metrics, the_aushc)
+            self.assertEqual(
+                the_aushc.fetch_failure_detail,
+                AsyncCouchDBHealthCheck.FFD_OK)
 
 
 class ViewMetricsUnitTaseCase(unittest.TestCase):
@@ -699,6 +779,58 @@ class ViewMetricsUnitTaseCase(unittest.TestCase):
         self.assertIsNotNone(ViewMetrics(mock.Mock(), 100, 100).fragmentation)
         self.assertEqual(0, ViewMetrics(mock.Mock(), 100, 100).fragmentation)
         self.assertEqual(50, ViewMetrics(mock.Mock(), 1000, 2000).fragmentation)
+
+    def test_fragmentation_health(self):
+        gb = 1024.0 * 1024.0 * 1024.0
+
+        with FragmentationHealthThresholdPatcher(None, None, 80, 50):
+            self.assertEqual(
+                async_model_actions.FRAG_HEALTH_OK,
+                ViewMetrics(mock.Mock(), 1, 1).fragmentation_health)
+
+        unhealthy_fragmentation_threshold = 80
+        at_risk_fragmentation_threshold = 60
+        with FragmentationHealthThresholdPatcher(None,
+                                                 None,
+                                                 unhealthy_fragmentation_threshold,
+                                                 at_risk_fragmentation_threshold):
+            disk_size = 2 * gb
+            desired_fragmentation = at_risk_fragmentation_threshold * 0.3
+            self.assertTrue(desired_fragmentation < at_risk_fragmentation_threshold)
+            data_size = (1 - desired_fragmentation / 100.0) * disk_size
+            self.assertEqual(
+                async_model_actions.FRAG_HEALTH_OK,
+                ViewMetrics(mock.Mock(), data_size, disk_size).fragmentation_health)
+
+        unhealthy_fragmentation_threshold = 80
+        at_risk_fragmentation_threshold = 60
+        with FragmentationHealthThresholdPatcher(None,
+                                                 None,
+                                                 unhealthy_fragmentation_threshold,
+                                                 at_risk_fragmentation_threshold):
+            disk_size = 2 * gb
+            desired_fragmentation = (unhealthy_fragmentation_threshold - at_risk_fragmentation_threshold) \
+                / 2.0 + at_risk_fragmentation_threshold
+            self.assertTrue(desired_fragmentation < unhealthy_fragmentation_threshold)
+            self.assertTrue(at_risk_fragmentation_threshold < desired_fragmentation)
+            data_size = (1 - desired_fragmentation / 100.0) * disk_size
+            self.assertEqual(
+                async_model_actions.FRAG_HEALTH_AT_RISK,
+                ViewMetrics(mock.Mock(), data_size, disk_size).fragmentation_health)
+
+        unhealthy_fragmentation_threshold = 80
+        at_risk_fragmentation_threshold = 60
+        with FragmentationHealthThresholdPatcher(None,
+                                                 None,
+                                                 unhealthy_fragmentation_threshold,
+                                                 at_risk_fragmentation_threshold):
+            disk_size = 2 * gb
+            desired_fragmentation = (100 - unhealthy_fragmentation_threshold) / 2.0 + unhealthy_fragmentation_threshold
+            self.assertTrue(unhealthy_fragmentation_threshold < desired_fragmentation)
+            data_size = (1 - desired_fragmentation / 100.0) * disk_size
+            self.assertEqual(
+                async_model_actions.FRAG_HEALTH_BAD,
+                ViewMetrics(mock.Mock(), data_size, disk_size).fragmentation_health)
 
 
 class DatabaseMetricsUnitTaseCase(unittest.TestCase):
@@ -731,6 +863,58 @@ class DatabaseMetricsUnitTaseCase(unittest.TestCase):
         self.assertIsNotNone(DatabaseMetrics(mock.Mock(), 1, 100, 100, []).fragmentation)
         self.assertEqual(0, DatabaseMetrics(mock.Mock(), 1, 100, 100, []).fragmentation)
         self.assertEqual(50, DatabaseMetrics(mock.Mock(), 1, 1000, 2000, []).fragmentation)
+
+    def test_fragmentation_health(self):
+        gb = 1024.0 * 1024.0 * 1024.0
+
+        with FragmentationHealthThresholdPatcher(None, None, 80, 50):
+            self.assertEqual(
+                async_model_actions.FRAG_HEALTH_OK,
+                DatabaseMetrics(mock.Mock(), mock.Mock(), 1, 1, []).fragmentation_health)
+
+        unhealthy_fragmentation_threshold = 80
+        at_risk_fragmentation_threshold = 60
+        with FragmentationHealthThresholdPatcher(unhealthy_fragmentation_threshold,
+                                                 at_risk_fragmentation_threshold,
+                                                 None,
+                                                 None):
+            disk_size = 2 * gb
+            desired_fragmentation = at_risk_fragmentation_threshold * 0.3
+            self.assertTrue(desired_fragmentation < at_risk_fragmentation_threshold)
+            data_size = (1 - desired_fragmentation / 100.0) * disk_size
+            self.assertEqual(
+                async_model_actions.FRAG_HEALTH_OK,
+                DatabaseMetrics(mock.Mock(), mock.Mock(), data_size, disk_size, []).fragmentation_health)
+
+        unhealthy_fragmentation_threshold = 80
+        at_risk_fragmentation_threshold = 60
+        with FragmentationHealthThresholdPatcher(unhealthy_fragmentation_threshold,
+                                                 at_risk_fragmentation_threshold,
+                                                 None,
+                                                 None):
+            disk_size = 2 * gb
+            desired_fragmentation = (unhealthy_fragmentation_threshold - at_risk_fragmentation_threshold) \
+                / 2.0 + at_risk_fragmentation_threshold
+            self.assertTrue(desired_fragmentation < unhealthy_fragmentation_threshold)
+            self.assertTrue(at_risk_fragmentation_threshold < desired_fragmentation)
+            data_size = (1 - desired_fragmentation / 100.0) * disk_size
+            self.assertEqual(
+                async_model_actions.FRAG_HEALTH_AT_RISK,
+                DatabaseMetrics(mock.Mock(), mock.Mock(), data_size, disk_size, []).fragmentation_health)
+
+        unhealthy_fragmentation_threshold = 80
+        at_risk_fragmentation_threshold = 60
+        with FragmentationHealthThresholdPatcher(unhealthy_fragmentation_threshold,
+                                                 at_risk_fragmentation_threshold,
+                                                 None,
+                                                 None):
+            disk_size = 2 * gb
+            desired_fragmentation = (100 - unhealthy_fragmentation_threshold) / 2.0 + unhealthy_fragmentation_threshold
+            self.assertTrue(unhealthy_fragmentation_threshold < desired_fragmentation)
+            data_size = (1 - desired_fragmentation / 100.0) * disk_size
+            self.assertEqual(
+                async_model_actions.FRAG_HEALTH_BAD,
+                DatabaseMetrics(mock.Mock(), mock.Mock(), data_size, disk_size, []).fragmentation_health)
 
 
 class AsyncViewMetricsRetrieverUnitTaseCase(unittest.TestCase):
