@@ -2,9 +2,9 @@
 As described in [these](https://github.com/simonsdave/microservice-architecture)
 architectural guidelines, all services should implement a ```/_health```
 endpoint.
-This sample includes an implementation
-of a ```/_health``` endpoint that follows these architectural guidelines
-and demonstrates the use of ```AsyncCouchDBHealthCheck```.
+This sample includes an implementation of a ```/_health``` endpoint that
+follows these architectural guidelines and demonstrates how to use
+the ```AsyncCouchDBHealthCheck``` class.
 
 An overview of the ```/_health``` endpoint's behavior:
 
