@@ -42,46 +42,6 @@ This config option is very useful when CouchDB self-signed certs.
 """
 validate_cert = True
 
-"""If the database's fragmentation is less than
-```unhealthy_database_fragmentation_threshold```
-then it's considered healthy.
-"""
-unhealthy_database_fragmentation_threshold = 80
-
-"""If the database's fragmentation is less than
-```unhealthy_database_fragmentation_threshold```
-but greater than
-```at_risk_database_fragmentation_threshold```
-then it's considered at risk.
-"""
-at_risk_database_fragmentation_threshold = 60
-
-"""If the view's fragmentation is less than
-```unhealthy_view_fragmentation_threshold```
-then it's considered healthy.
-"""
-unhealthy_view_fragmentation_threshold = 80
-
-"""If the view's fragmentation is less than
-```unhealthy_view_fragmentation_threshold```
-but greater than
-```at_view_fragmentation_threshold```
-then it's considered at risk.
-"""
-at_risk_view_fragmentation_threshold = 80
-
-"""Database and view fragmentation health one of FRAG_HEALTH_OK,
-FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD."""
-FRAG_HEALTH_OK = 0x0001
-
-"""Database and view fragmentation health one of FRAG_HEALTH_OK,
-FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD."""
-FRAG_HEALTH_AT_RISK = 0x0002
-
-"""Database and view fragmentation health one of FRAG_HEALTH_OK,
-FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD."""
-FRAG_HEALTH_BAD = 0x0003
-
 """```_doc_type_reg_ex``` is used to verify the format of the
 type property for each document before the document is written
 to the store.
@@ -89,9 +49,6 @@ to the store.
 _doc_type_reg_ex = re.compile(
     r"^[^\s]+_v\d+\.\d+$",
     re.IGNORECASE)
-
-"""just used to improve code readability"""
-_one_meg_in_bytes = 1 * 1024 * 1024
 
 
 def _fragmentation(data_size, disk_size):
@@ -109,25 +66,6 @@ def _fragmentation(data_size, disk_size):
         return None
     fragmentation = ((disk_size - float(data_size)) / disk_size) * 100.0
     return int(round(fragmentation, 0))
-
-
-def _fragmentation_health(fragmentation,
-                          disk_size,
-                          at_risk_fragmentation_threshold,
-                          unhealthy_fragmentation_threshold):
-    """See _fragmentation() for a def'n of fragmenation.
-    If ```disk_size``` is less than 1 MB the FRAG_HEALTH_OK
-    is always returned. Otherwise one of FRAG_HEALTH_OK,
-    FRAG_HEALTH_AT_RISK or FRAG_HEALTH_BAD is returned.
-    """
-    if disk_size < _one_meg_in_bytes:
-        return FRAG_HEALTH_OK
-    assert at_risk_fragmentation_threshold < unhealthy_fragmentation_threshold
-    if fragmentation < at_risk_fragmentation_threshold:
-        return FRAG_HEALTH_OK
-    if fragmentation < unhealthy_fragmentation_threshold:
-        return FRAG_HEALTH_AT_RISK
-    return FRAG_HEALTH_BAD
 
 
 class CouchDBAsyncHTTPRequest(tornado.httpclient.HTTPRequest):
@@ -599,17 +537,8 @@ class AsyncDeleter(AsyncAction):
 class AsyncCouchDBHealthCheck(AsyncAction):
     """Async'ly confirm CouchDB can be reached."""
 
-    # FDD = Fetch Failure Details
-    FFD_OK = 0x0000
-    FFD_ERROR = 0x0080
-    FFD_ERROR_GETTING_DATABASE_METRICS = FFD_ERROR | 0x0001
-    FFD_DATABASE_FRAGMENTATION_NOT_HEALTHY = FFD_ERROR | 0x0002
-    FFD_VIEW_FRAGMENTATION_NOT_HEALTHY = FFD_ERROR | 0x0003
-
     def __init__(self, async_state=None):
         AsyncAction.__init__(self, async_state)
-
-        self.fetch_failure_detail = None
 
         self._callback = None
 
@@ -617,31 +546,17 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         assert not self._callback
         self._callback = callback
 
-        admr = AsyncDatabaseMetricsRetriever()
-        admr.fetch(self._on_admr_fetch_done)
+        request = CouchDBAsyncHTTPRequest("", "GET", None)
 
-    def _on_admr_fetch_done(self, is_ok, database_metrics, admr):
-        if not is_ok:
-            self._call_callback(type(self).FFD_ERROR_GETTING_DATABASE_METRICS, database_metrics)
-            return
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_db_fetch_done)
 
-        if FRAG_HEALTH_OK != database_metrics.fragmentation_health:
-            self._call_callback(type(self).FFD_DATABASE_FRAGMENTATION_NOT_HEALTHY, database_metrics)
-            return
+    def _on_cac_db_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, cac):
+        self._call_callback(is_ok)
 
-        for view_metrics in database_metrics.view_metrics:
-            if FRAG_HEALTH_OK != view_metrics.fragmentation_health:
-                self._call_callback(type(self).FFD_VIEW_FRAGMENTATION_NOT_HEALTHY, database_metrics)
-                return
-
-        self._call_callback(type(self).FFD_OK, database_metrics)
-
-    def _call_callback(self, fetch_failure_detail, database_metrics):
+    def _call_callback(self, is_ok):
         assert self._callback is not None
-        assert self.fetch_failure_detail is None
-        self.fetch_failure_detail = fetch_failure_detail
-        is_ok = not bool(self.fetch_failure_detail & type(self).FFD_ERROR)
-        self._callback(is_ok, database_metrics, self)
+        self._callback(is_ok, self)
         self._callback = None
 
 
@@ -663,18 +578,6 @@ class ViewMetrics(object):
         """The view's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
 
-    @property
-    def fragmentation_health(self):
-        """Returns one of FRAG_HEALTH_OK, FRAG_HEALTH_AT_RISK or
-        FRAG_HEALTH_BAD to indicated the view's fragmentation
-        health.
-        """
-        return _fragmentation_health(
-            self.fragmentation,
-            self.disk_size,
-            at_risk_view_fragmentation_threshold,
-            unhealthy_view_fragmentation_threshold)
-
 
 class DatabaseMetrics(object):
     """An instance of this class contains metrics which describe
@@ -695,18 +598,6 @@ class DatabaseMetrics(object):
     def fragmentation(self):
         """The database's fragmentation as an integer percentage."""
         return _fragmentation(self.data_size, self.disk_size)
-
-    @property
-    def fragmentation_health(self):
-        """Returns one of FRAG_HEALTH_OK, FRAG_HEALTH_AT_RISK or
-        FRAG_HEALTH_BAD to indicated the database's fragmentation
-        health.
-        """
-        return _fragmentation_health(
-            self.fragmentation,
-            self.disk_size,
-            at_risk_database_fragmentation_threshold,
-            unhealthy_database_fragmentation_threshold)
 
 
 class AsyncDatabaseMetricsRetriever(AsyncAction):
