@@ -3,6 +3,16 @@ All notable changes to this project will be documented in this file.
 Format of this file follows [these](http://keepachangelog.com/) guidelines.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.20.0] - [2015-xx-xx]
+
+### Changed
+- ...
+
+### Added
+- /_health sample using AsyncCouchDBHealthCheck
+- AsyncDatabaseMetricsRetriever async action to retrieve database metrics
+- /_metrics sample using new AsyncDatabaseMetricsRetriever
+
 ## [0.12.0] - [2015-08-21]
 
 ### Changed
