@@ -41,9 +41,17 @@ WIP
 As described in [these](https://github.com/simonsdave/microservice-architecture)
 architectural guidelines, all services should implement a ```/_health```
 endpoint.
-The [exponential backoff](exp_backoff) sample includes an implementation
-of a ```/_health``` endpoint that follows these architectural guidelines
-demonstrating how to use the ```AsyncCouchDBHealthCheck``` class.
+This sample includes an implementation of a ```/_health``` endpoint that
+follows these architectural guidelines and demonstrates how to use
+the ```AsyncCouchDBHealthCheck``` class.
+
+## [metrics](metrics)
+As described in [these](https://github.com/simonsdave/microservice-architecture)
+architectural guidelines, all services should implement a ```/_metrics```
+endpoint.
+This sample includes an implementation of a ```/_metrics``` endpoint that
+follows these architectural guidelines and demonstrates how to use
+the ```AsyncDatabaseMetricsRetriever``` class.
 
 ## tampering
 WIP
