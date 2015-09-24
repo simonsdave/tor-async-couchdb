@@ -9,5 +9,5 @@ install:
 script:
   - pep8
   - flake8
-  - nosetests --with-coverage
+  - nosetests --with-coverage --cover-branches --cover-erase
   - coveralls
