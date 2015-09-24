@@ -24,6 +24,10 @@ samples are best way to gain an understanding of the code and capabilities
 
 #Capabilities
 
+When thinking about ```tor-async-couchdb``` capabilities it's
+probably helpful to think about them in
+[this architectural context](https://github.com/simonsdave/microservice-architecture).
+
 ##Functional Capabilities
 * **Python object to CouchDB doc mapping** - easy mapping instances of
 Python model classes (instances) to CouchDB documents
@@ -31,61 +35,24 @@ Python model classes (instances) to CouchDB documents
 * **async collections retrieval** - async retrieval of collections of model instances
 * **async retrieval by any document property** - async'ly retrieve model instances
 and collections of model instances by querying any CouchDB document property
-* **disk space optimized CouchDB views**
 * **CouchDB b-tree friendly document IDs**
 * ```tor-async-couchdb```'s interface encourages users
 of the package to deal with CouchDB's document conflict
 errors using a simple retry pattern
 * encourages an approach to **NoSQL data modeling** that enables
-  * **automated reconciliation of document conflicts** thus enabling true
-    multi-master replication which in turn enables deployments with
-    multiple, simultaneously active data centers
+  * **automated reconciliation of document conflicts**
   * **satisfying data and information classification policies**
 * :TODO: never delete/most recent style queries
-
 * a collection of utility classes that make creating a
-Python based **CouchDB database installer** possible in only a few lines
-of code
+Python based **CouchDB database installer** possible in only a few lines of code
+* async retrieval of database and view metrics
 
 ##Security Capabilities
 * app tier optionally **authenticate to CouchDB using BASIC authentication**
 * with well defined points of extensibility in Python object to
-CouchDB doc mapping which enables **per property encryption/hashing**
+CouchDB document mapping enabling **per property encryption/hashing**
 * **anti-tampering** which ensures CouchDB documents
 can only be created and updated by a service's application tier
-
-#Architectural Context
-In order to understand the value of ```tor-async-couchdb```
-it's helpful to consider the architectural context within which
-```tor-async-couchdb``` was intended to be used.
-
-* 2-tier service with an app tier talking to a data tier and the
-app tier exposes a RESTful API
-* each tier (app tier and data tier) scales horizontally
-* stateless app tier enables horizontal scaling
-* optimization of app tier compute resources by using
-Tornado's [Asynchronous and non-Blocking I/O](http://tornado.readthedocs.org/en/latest/guide/async.html)
-as an elegant solution to the [C10K problem](http://en.wikipedia.org/wiki/C10k_problem)
-* data tier scales horizontally by leveraging NoSQL databases
-which are designed to scale horizontally and
-
-support multi-master replication;
-CouchDB is the database or choice in the data tier because of its exceptionally strong
-replication capabilities and that enables the simultaneous multiple data center
-deployment previously described; CouchDB 2.0 and IBM's commercial offering of
-CouchDB called Cloudant both enable horizontal scaling of the data tier
-
-* service infrastructure is deployed into IaaS providers (AWS, GCE, etc) providing
-access to elastic compute capacity so new servers can be spun up minutes
-* multiple IaaS providers is nice from an availability point of view and ensures
-that if for some super odd reason an individual provider runs out of server capacity
-other providers can step in and satisfy the demand
-* the service infrastructure simultaneously operates in multiple data centers
-at multiple IaaS providers with DNS being used to route requests to the
-network wise closet data center
-
-* when load balancing and proxying are required, tried and tested haproxy
-and nginx are the recommended tools
 
 #Using
 
