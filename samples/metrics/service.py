@@ -4,10 +4,8 @@ as part of implementing an app tier /_metrics endpoint.
 """
 
 import httplib
-import json
 import logging
 import optparse
-import re
 import time
 
 import tornado.httpserver
