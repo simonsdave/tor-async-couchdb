@@ -51,6 +51,23 @@ _doc_type_reg_ex = re.compile(
     re.IGNORECASE)
 
 
+def _fragmentation(data_size, disk_size):
+    """Think of the fragmentation metric is that it's
+    a measure of the % of the database or view that's used
+    to store old documents and their associated metadata.
+
+    See
+    https://wiki.apache.org/couchdb/Compaction
+    and
+    http://docs.couchdb.org/en/latest/config/compaction.html#compaction-daemon-rules
+    for details on fragmentation calculation.
+    """
+    if data_size is None or disk_size is None:
+        return None
+    fragmentation = ((disk_size - float(data_size)) / disk_size) * 100.0
+    return int(round(fragmentation, 0))
+
+
 class CouchDBAsyncHTTPRequest(tornado.httpclient.HTTPRequest):
     """```CouchDBAsyncHTTPRequest``` extends ```tornado.httpclient.HTTPRequest```
     adding ...
@@ -58,6 +75,8 @@ class CouchDBAsyncHTTPRequest(tornado.httpclient.HTTPRequest):
 
     def __init__(self, path, method, body_as_dict):
         object.__init__(self)
+
+        assert not path.startswith('/')
 
         url = "%s/%s" % (database, path)
 
@@ -189,9 +208,27 @@ class CouchDBAsyncHTTPClient(object):
             return
 
         #
-        # extract models from response ...
+        # process response body ...
+        #
+
+        #
+        # CouchDB always returns response.body (a string) - let's convert the
+        # body to a dict so we can operate on it more effectively
         #
         response_body = json.loads(response.body) if response.body else {}
+
+        #
+        # the response body either contains a bunch of documents that
+        # need to be converted to model objects or a single document
+        #
+        if not self.create_model_from_doc:
+            self._call_callback(
+                True,               # is_ok
+                False,              # is_conflict
+                response_body,
+                response_body.get("id", None),
+                response_body.get("rev", None))
+            return
 
         models = []
         for row in response_body.get("rows", []):
@@ -205,12 +242,9 @@ class CouchDBAsyncHTTPClient(object):
             model = self.create_model_from_doc(doc)
             models.append(model)
 
-        #
-        # all done! :-)
-        #
         self._call_callback(
-            True,       # is_ok
-            False,      # is_conflict
+            True,                   # is_ok
+            False,                  # is_conflict
             models,
             response_body.get("id", None),
             response_body.get("rev", None))
@@ -218,11 +252,11 @@ class CouchDBAsyncHTTPClient(object):
     def _call_callback(self,
                        is_ok,
                        is_conflict,
-                       models=None,
+                       models_or_response_body=None,
                        _id=None,
                        _rev=None):
         assert self._callback is not None
-        self._callback(is_ok, is_conflict, models, _id, _rev, self)
+        self._callback(is_ok, is_conflict, models_or_response_body, _id, _rev, self)
         self._callback = None
 
 
@@ -515,13 +549,273 @@ class AsyncCouchDBHealthCheck(AsyncAction):
         request = CouchDBAsyncHTTPRequest("", "GET", None)
 
         cac = CouchDBAsyncHTTPClient(httplib.OK, None)
-        cac.fetch(request, self._on_cac_fetch_done)
+        cac.fetch(request, self._on_cac_db_fetch_done)
 
-    def _on_cac_fetch_done(self, is_ok, is_conflict, models, _id, _rev, acdba):
-        assert is_conflict is False
+    def _on_cac_db_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, cac):
         self._call_callback(is_ok)
 
     def _call_callback(self, is_ok):
         assert self._callback is not None
         self._callback(is_ok, self)
+        self._callback = None
+
+
+class ViewMetrics(object):
+    """An instance of this class contains metrics which describe
+    both the shape and health of a view in a CouchDB databse.
+    Instances of this class are created by ```AsyncViewMetricsRetriever```.
+    """
+
+    def __init__(self, design_doc, data_size, disk_size):
+        object.__init__(self)
+
+        self.design_doc = design_doc
+        self.data_size = data_size
+        self.disk_size = disk_size
+
+    @property
+    def fragmentation(self):
+        """The view's fragmentation as an integer percentage."""
+        return _fragmentation(self.data_size, self.disk_size)
+
+
+class DatabaseMetrics(object):
+    """An instance of this class contains metrics which describe
+    both the shape and health of a CouchDB databse. Instances of
+    this class are created by ```AsyncDatabaseMetricsRetriever```.
+    """
+
+    def __init__(self, database, doc_count, data_size, disk_size, view_metrics):
+        object.__init__(self)
+
+        self.database = database
+        self.doc_count = doc_count
+        self.data_size = data_size
+        self.disk_size = disk_size
+        self.view_metrics = view_metrics
+
+    @property
+    def fragmentation(self):
+        """The database's fragmentation as an integer percentage."""
+        return _fragmentation(self.data_size, self.disk_size)
+
+
+class AsyncDatabaseMetricsRetriever(AsyncAction):
+    """Async'ly retrieve metrics for the CouchDB database."""
+
+    # FDD = Fetch Failure Details
+    FFD_OK = 0x0000
+    FFD_ERROR = 0x0080
+    FFD_ERROR_TALKING_TO_COUCHDB = FFD_ERROR | 0x0001
+    FFD_ERROR_GETTING_VIEW_METRICS = FFD_ERROR | 0x0002
+
+    def __init__(self, async_state=None):
+        AsyncAction.__init__(self, async_state)
+
+        self.fetch_failure_detail = None
+
+        self._callback = None
+
+    def fetch(self, callback):
+        assert not self._callback
+        self._callback = callback
+
+        request = CouchDBAsyncHTTPRequest("", "GET", None)
+
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_db_fetch_done)
+
+    def _on_cac_db_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
+        assert is_conflict is False
+        if not is_ok:
+            self._call_callback(type(self).FFD_ERROR_TALKING_TO_COUCHDB)
+            return
+
+        async_state = (
+            response_body.get("doc_count"),
+            response_body.get("data_size"),
+            response_body.get("disk_size"),
+        )
+        aaddmr = AsyncAllViewMetricsRetriever(async_state)
+        aaddmr.fetch(self._on_aaddmr_fetch_done)
+
+    def _on_aaddmr_fetch_done(self, is_ok, view_metrics, aaddmr):
+        if not is_ok:
+            self._call_callback(type(self).FFD_ERROR_GETTING_VIEW_METRICS)
+            return
+
+        (doc_count, data_size, disk_size) = aaddmr.async_state
+        database_metrics = DatabaseMetrics(
+            database,
+            doc_count,
+            data_size,
+            disk_size,
+            view_metrics)
+        self._call_callback(type(self).FFD_OK, database_metrics)
+
+    def _call_callback(self, fetch_failure_detail, database_metrics=None):
+        assert self._callback is not None
+        assert self.fetch_failure_detail is None
+        self.fetch_failure_detail = fetch_failure_detail
+        is_ok = not bool(self.fetch_failure_detail & type(self).FFD_ERROR)
+        self._callback(
+            is_ok,
+            database_metrics if is_ok else None,
+            self)
+        self._callback = None
+
+
+class AsyncAllViewMetricsRetriever(AsyncAction):
+    """Async'ly retrieve metrics for all views in a database."""
+
+    # FDD = Fetch Failure Details
+    FFD_OK = 0x0000
+    FFD_ERROR = 0x0080
+    FFD_ERROR_TALKING_TO_COUCHDB = FFD_ERROR | 0x0001
+    FFD_ERROR_FETCHING_VIEW_METRICS = FFD_ERROR | 0x0002
+    FFD_NO_DESIGN_DOCS_IN_DATABASE = 0x0003
+
+    def __init__(self, async_state=None):
+        AsyncAction.__init__(self, async_state)
+
+        self.fetch_failure_detail = None
+
+        self._todo = []
+        self._done = []
+        self._callback = None
+
+    def fetch(self, callback):
+        assert not self._callback
+        self._callback = callback
+
+        #
+        # try something like this to get a sense of the response
+        #
+        #   curl 'http://127.0.0.1:5984/database/_all_docs?startkey="_design"&endkey="_design0"' | python -m json.tool
+        #
+        # and just remember to replace "database" in the above request. the
+        # output will look something like:
+        #
+        # {
+        #     "offset": 2,
+        #     "rows": [
+        #         {
+        #             "id": "_design/fruit_by_fruit_id",
+        #             "key": "_design/fruit_by_fruit_id",
+        #             "value": {
+        #                 "rev": "1-446934fdc8cd18bee9db4b9df095074a"
+        #             }
+        #         }
+        #     ],
+        #     "total_rows": 3
+        # }
+        #
+        path = '_all_docs?startkey="_design"&endkey="_design0"'
+        request = CouchDBAsyncHTTPRequest(path, "GET", None)
+
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_fetch_done)
+
+    def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, acdba):
+        assert is_conflict is False
+        if not is_ok:
+            self._call_callback(type(self).FFD_ERROR_TALKING_TO_COUCHDB)
+            return
+
+        rows = response_body.get("rows", [])
+        if not rows:
+            self._call_callback(type(self).FFD_NO_DESIGN_DOCS_IN_DATABASE)
+            return
+
+        for row in rows:
+            design_doc = row["key"].split("/")[1]
+            self._todo.append(design_doc)
+            avmr = AsyncViewMetricsRetriever(design_doc)
+            avmr.fetch(self._on_avmr_fetch_done)
+
+    def _on_avmr_fetch_done(self, is_ok, view_metrics, avmr):
+        if not is_ok:
+            self._call_callback(type(self).FFD_ERROR_FETCHING_VIEW_METRICS)
+            return
+
+        self._todo.remove(view_metrics.design_doc)
+        self._done.append(view_metrics)
+
+        self._call_callback(type(self).FFD_OK)
+
+    def _call_callback(self, fetch_failure_detail):
+        if not self._callback:
+            # results have already been sent to caller even though
+            # we're still getting responses back from CouchDB
+            return
+
+        is_ok = not bool(fetch_failure_detail & type(self).FFD_ERROR)
+
+        if not is_ok:
+            assert self.fetch_failure_detail is None
+            self.fetch_failure_detail = fetch_failure_detail
+            self._callback(False, None, self)
+            self._callback = None
+            return
+
+        if self._todo:
+            return
+
+        assert self.fetch_failure_detail is None
+        self.fetch_failure_detail = fetch_failure_detail
+        self._callback(True, self._done, self)
+        self._callback = None
+
+
+class AsyncViewMetricsRetriever(AsyncAction):
+    """Async'ly retrieve metrics for a single view."""
+
+    # FDD = Fetch Failure Details
+    FFD_OK = 0x0000
+    FFD_ERROR = 0x0080
+    FFD_ERROR_TALKING_TO_COUCHDB = FFD_ERROR | 0x0001
+    FFD_INVALID_RESPONSE_BODY = 0x0002
+
+    def __init__(self, design_doc, async_state=None):
+        AsyncAction.__init__(self, async_state)
+
+        self.design_doc = design_doc
+        self.fetch_failure_detail = None
+
+        self._callback = None
+
+    def fetch(self, callback):
+        assert not self._callback
+        self._callback = callback
+
+        path = '_design/%s/_info' % self.design_doc
+        request = CouchDBAsyncHTTPRequest(path, "GET", None)
+
+        cac = CouchDBAsyncHTTPClient(httplib.OK, None)
+        cac.fetch(request, self._on_cac_fetch_done)
+
+    def _on_cac_fetch_done(self, is_ok, is_conflict, response_body, _id, _rev, cac):
+        assert is_conflict is False
+        if not is_ok:
+            self._call_callback(type(self).FFD_ERROR_TALKING_TO_COUCHDB)
+            return
+
+        view_index = response_body.get('view_index', {})
+        data_size = view_index.get('data_size')
+        disk_size = view_index.get('disk_size')
+        cls = type(self)
+        self._call_callback(
+            cls.FFD_OK if data_size is not None and disk_size is not None else cls.FFD_INVALID_RESPONSE_BODY,
+            data_size,
+            disk_size)
+
+    def _call_callback(self, fetch_failure_detail, data_size=None, disk_size=None):
+        assert self._callback is not None
+        assert self.fetch_failure_detail is None
+        self.fetch_failure_detail = fetch_failure_detail
+        is_ok = not bool(self.fetch_failure_detail & type(self).FFD_ERROR)
+        self._callback(
+            is_ok,
+            ViewMetrics(self.design_doc, data_size, disk_size) if is_ok else None,
+            self)
         self._callback = None

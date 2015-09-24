@@ -1,4 +1,4 @@
-"""Integration tests to verify health checking is working.
+"""Integration tests to verify metrics retrieval is working.
 Turns out this tests suite is also a pretty good integration
 test for the async couchdb framework too:-)
 
@@ -23,13 +23,22 @@ class DatabaseCreator(object):
     the creation.
     """
 
-    _design_doc_template = (
+    _design_doc_template_with_view = (
         '{'
         '    "language": "javascript",'
         '    "views": {'
         '        "%VIEW_NAME%": {'
         '            "map": "function(doc) { if (doc.type.match(/^fruit_v1.0/i)) { emit(doc.fruit_id, null) } }"'
         '        }'
+        '    }'
+        '}'
+    )
+
+    _design_doc_template_with_no_view = (
+        '{'
+        '    "language": "javascript",'
+        '    "shows": {'
+        '       "fruitasheading": "function(doc, req) { return \'<h1>\' + doc.fruit + \'</h1>\' }"'
         '    }'
         '}'
     )
@@ -42,9 +51,12 @@ class DatabaseCreator(object):
         self.design_docs = {}
         for i in range(0, number_design_docs):
             design_doc_name = "fruit_by_fruit_id_%05d" % i
-            design_doc = type(self)._design_doc_template.replace(
-                "%VIEW_NAME%",
-                design_doc_name)
+            if i % 2 == 0:
+                design_doc = type(self)._design_doc_template_with_view.replace(
+                    "%VIEW_NAME%",
+                    design_doc_name)
+            else:
+                design_doc = type(self)._design_doc_template_with_no_view
             self.design_docs[design_doc_name] = design_doc
 
     def __enter__(self):
@@ -87,29 +99,29 @@ class DatabaseCreator(object):
 
 
 class RequestHandler(tornado.web.RequestHandler):
-    """The ```HealthCheckIntegrationTestCase``` integration tests make
+    """The ```DatabaseMetricsIntegrationTestCase``` integration tests make
     async requests to this Tornado request handler which then calls
-    the async health action classes.
+    the async metrics action classes.
 
     Why is this request handler needed? The async health action
     classes need to operate in the context of a Tornado I/O loop.
     """
 
-    get_url_spec = r"/_health"
+    get_url_spec = r"/_stats"
 
     @tornado.web.asynchronous
     def get(self):
 
-        def on_check_done(is_ok, ahc):
-            self.set_status(httplib.OK if is_ok else httplib.SERVICE_UNAVAILABLE)
+        def on_fetch_done(is_ok, view_metrics, aavmr):
+            self.set_status(httplib.OK if is_ok else httplib.INTERNAL_SERVER_ERROR)
             self.finish()
 
-        ahc = async_model_actions.AsyncCouchDBHealthCheck()
-        ahc.check(on_check_done)
+        aavmr = async_model_actions.AsyncAllViewMetricsRetriever()
+        aavmr.fetch(on_fetch_done)
 
 
 @nose.plugins.attrib.attr('integration')
-class HealthCheckIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
+class DatabaseMetricsIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
 
     def get_app(self):
         handlers = [
@@ -121,11 +133,6 @@ class HealthCheckIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         return tornado.web.Application(handlers=handlers)
 
     def test_all_good(self):
-        with DatabaseCreator(number_design_docs=5, create=True, delete=True):
+        with DatabaseCreator(number_design_docs=50, create=True, delete=True):
             response = self.fetch(RequestHandler.get_url_spec, method="GET")
             self.assertEqual(response.code, httplib.OK)
-
-    def test_should_fail_because_database_does_not_exist(self):
-        with DatabaseCreator(number_design_docs=0, create=False, delete=True):
-            response = self.fetch(RequestHandler.get_url_spec, method="GET")
-            self.assertEqual(response.code, httplib.SERVICE_UNAVAILABLE)
