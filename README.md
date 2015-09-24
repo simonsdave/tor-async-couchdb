@@ -88,5 +88,4 @@ async_model_actions.validate_cert = False
 
 Instances of a model class are saved in CouchDB as a document with
 a ```type``` property set to a value like ```boo_v1.0```.
-All model classes are derived from a common abstract base class
-```tor_async_couchdb.model.Model```.
+All model classes are derived from ```tor_async_couchdb.model.Model``` base class.
