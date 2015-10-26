@@ -3,10 +3,10 @@ All notable changes to this project will be documented in this file.
 Format of this file follows [these](http://keepachangelog.com/) guidelines.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.20.0] - [2015-xx-xx]
+## [0.20.0] - [2015-10-26]
 
 ### Changed
-- ...
+- requests added to setup.py so DB installer just works
 
 ### Added
 - /_health sample using AsyncCouchDBHealthCheck
