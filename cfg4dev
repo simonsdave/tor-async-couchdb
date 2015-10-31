@@ -1,4 +1,10 @@
-if [ -f "$PWD/requirements.txt" ]; then
+configure_dev_env()
+{
+    if [ ! -f "$PWD/requirements.txt" ]; then
+        echo "Must source this script from repo's root directory"
+        return 1
+    fi
+
     if [ -d "$PWD/env" ]; then
         source "$PWD/env/bin/activate"
     else
@@ -30,6 +36,8 @@ if [ -f "$PWD/requirements.txt" ]; then
 
     export PATH=$PATH:"$PWD/bin"
     export PYTHONPATH="$PWD"
-else
-    echo "Must source this script from repo's root directory"
-fi
+
+    return 0
+}
+
+configure_dev_env
