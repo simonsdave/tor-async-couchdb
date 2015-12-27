@@ -7,20 +7,12 @@ tor-async-couchdb is intended to operate as part of a service's application
 tier (implemented using Tornado's [Asynchronous and non-Blocking I/O](http://tornado.readthedocs.org/en/latest/guide/async.html))
 and interact with the service's data tier (implemented using CouchDB).
 
->**Note** - ```tor-async-couchdb``` is poorly documented (@ the moment) - tests &
-samples are best way to gain an understanding of the code and capabilities
+>```tor-async-couchdb``` documentation isn't currently as strong as it could be - tests
+and in particular samples are best way to gain an understanding of the code and capabilities
 
-```tor-async-couchdb``` is known to work with:
-
-* Python 2.7.x
-* Tornado 3.2.2 to 4.1
-* CouchDB 1.6.1
-* Mac OS X 10.9
-* Ubuntu 12.04 and 14.04
-
-```tor-async-couchdb``` has been used with although not extensively tested with:
-
-* Cloudant's DBaaS offering as well as Cloudant Local
+>```tor-async-couchdb``` has been used with although not extensively tested
+with [Cloudant DBaaS](https://cloudant.com/product/)
+and [Cloudant Local](https://cloudant.com/cloudant-local/)
 
 #Capabilities
 
