@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 Format of this file follows [these](http://keepachangelog.com/) guidelines.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.40.0] - [2016-xx-xx]
+
+### Changed
+- removed constraint on pycurl rev; pycurl now needs to be >= 7.19.5.1
+
 ## [0.20.0] - [2015-10-26]
 
 ### Changed
