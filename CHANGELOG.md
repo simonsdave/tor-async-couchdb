@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 - removed constraint on pycurl rev; pycurl now needs to be >= 7.19.5.1
+- fixed exp_backoff sample
 
 ## [0.20.0] - [2015-10-26]
 
