@@ -301,38 +301,44 @@ class BaseAsyncModelRetriever(AsyncAction):
         pairs that will be used to construct the query string in the request
         to CouchDB.
 
-        The presence of this method is a bit of a hack that was introduced
-        when support for "most recent document" type queries was required.
-        With this method here it allows derived classes to override the
-        implementation and specialize the response for the new query types.
+        The presence of this method was first introduced when support for
+        "most recent document" type queries was required.
 
-        # it does get the "most recent" style queries implemented:-)
-         endkey = json.dumps([self._user.network_id, self._user.user_id])
-         startkey = json.dumps([self._user.network_id, self._user.user_id, {}])
-         return {
-             "include_docs": "true",
-             "limit": 1,
-             "descending": "true",
-             "endkey": endkey,
-             "startkey": startkey,
-         }
+        Below is an example implementation for a rather complex scaneario
+        where the keys are composite and we have a "most recent" style
+        query type.
 
-        {
-            "language": "javascript",
-            "views": {
-                "member_details_by_network_id_user_id_and_created_on": {
-                    "map": "function(doc) {
-                        if (doc.type.match(/^member_details_v\\d+.\\d+/i)) {
-                            emit([doc.network_id, doc.user_id, doc.created_on], null)
-                        }
-                    }"
+            def get_query_string_key_value_pairs(self):
+                endkey = json.dumps([self._user.network_id, self._user.user_id])
+                startkey = json.dumps([self._user.network_id, self._user.user_id, {}])
+                return {
+                     "include_docs": "true",
+                     "limit": 1,
+                     "descending": "true",
+                     "endkey": endkey,
+                     "startkey": startkey,
+                }
+
+        Below is the JavaScript design document that would support the
+        above implementation.
+
+            {
+                "language": "javascript",
+                "views": {
+                    "member_details_by_network_id_user_id_and_created_on": {
+                        "map": "function(doc) {
+                            if (doc.type.match(/^member_details_v\\d+.\\d+/i)) {
+                                emit([doc.network_id, doc.user_id, doc.created_on], null)
+                            }
+                        }"
+                    }
                 }
             }
-        }
 
-        all timestamps a represented as strings with the format "YYYY-MM-DDTHH:MM:SS.MMMMMM+00:00"
-        which is important because in this format sorting strings that are actually dates will
-        work as you expect
+        Note - all timestamps are expected to be represented as strings with
+        the format YYYY-MM-DDTHH:MM:SS.MMMMMM+00:00 which is important because
+        with this format sorting strings that are actually dates will work as
+        you expect
         """
         raise NotImplementedError()
 
