@@ -42,14 +42,6 @@ This config option is very useful when CouchDB self-signed certs.
 """
 validate_cert = True
 
-"""```_doc_type_reg_ex``` is used to verify the format of the
-type property for each document before the document is written
-to the store.
-"""
-_doc_type_reg_ex = re.compile(
-    r"^[^\s]+_v\d+\.\d+$",
-    re.IGNORECASE)
-
 
 def _fragmentation(data_size, disk_size):
     """Think of the fragmentation metric is that it's
@@ -449,6 +441,14 @@ class InvalidTypeInDocForStoreException(Exception):
 class AsyncPersister(AsyncAction):
     """Async'ly persist a model object."""
 
+    """```_doc_type_reg_ex``` is used to verify the format of the
+    type property for each document before the document is written
+    to the store.
+    """
+    _doc_type_reg_ex = re.compile(
+        r"^[^\s]+_v\d+\.\d+$",
+        re.IGNORECASE)
+
     def __init__(self, model, model_as_doc_for_store_args, async_state):
         AsyncAction.__init__(self, async_state)
 
@@ -468,15 +468,15 @@ class AsyncPersister(AsyncAction):
         # logic relies on being able to extract the type name from
         # a document read from the store
         #
-        if not _doc_type_reg_ex.match(model_as_doc_for_store["type"]):
+        if not type(self)._doc_type_reg_ex.match(model_as_doc_for_store['type']):
             raise InvalidTypeInDocForStoreException(self.model)
 
-        if "_id" in model_as_doc_for_store:
-            path = model_as_doc_for_store["_id"]
-            method = "PUT"
+        if '_id' in model_as_doc_for_store:
+            path = model_as_doc_for_store['_id']
+            method = 'PUT'
         else:
-            path = ""
-            method = "POST"
+            path = ''
+            method = 'POST'
 
         request = CouchDBAsyncHTTPRequest(path, method, model_as_doc_for_store)
 
