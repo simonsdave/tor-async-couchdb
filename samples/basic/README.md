@@ -1,4 +1,4 @@
-#Basic Sample
+# Basic Sample
 This service implements a simple RESTful service that
 demonstrates how the basic features of ```tor-async-couchdb``` were intended to be used.
 This is the first in a series of samples services.
@@ -13,13 +13,14 @@ Tornado's [Asynchronous and non-Blocking I/O](http://tornado.readthedocs.org/en/
 and ```tor-async-couchdb```.
 The data tier is implemented using CouchDB.
 
-#Creating the CouchDB Database
-See [../db_installer](db_installer) which describes how to create the CouchDB
+# Creating the CouchDB Database
+
+See [db_installer](../db_installer) which describes how to create the CouchDB
 Database that the sample service will use.
 
-#Running the Service
+# Running the Service
 
-##Command line options
+## Command line options
 ```bash
 >./service.py --help
 Usage: service.py [options]
@@ -35,15 +36,15 @@ Options:
                        http://127.0.0.1:5984/tor_async_couchdb_sample_basic
 ```
 
-##Startup
+## Startup
 ```bash
 >./service.py
 2015-04-22T11:56:57.724+00:00 INFO service service started and listening on http://127.0.0.1:8445 talking to database http://127.0.0.1:5984/tor_async_couchdb_sample_basic
 ```
 
-#Is the Service Working?
+# Is the Service Working?
 
-##Integration Tests
+## Integration Tests
 Once you have spun up the sample services you can run
 a sanity test suite against the service using a
 [nose](https://nose.readthedocs.org/en/latest/) runnable
@@ -63,7 +64,7 @@ OK
 >
 ```
 
-##Stress Tests
+## Stress Tests
 Another way to verify the service is working correctly is to stress
 the service by driving lots of concurrent requests into the service
 and observing that all requests are successfully serviced.
@@ -77,9 +78,9 @@ concurrent requests.
 >the basic service to successfully deal with lots of concurrent
 >```PUT``` and ```DELETE``` requests.
 
-#Exercising the Service's API
+# Exercising the Service's API
 
-##Create
+## Create
 ```bash
 >curl -s -X POST http://127.0.0.1:8445/v1.0/fruits | python -m json.tool
 {
@@ -93,7 +94,7 @@ concurrent requests.
 >
 ```
 
-##Read
+## Read
 ```bash
 >curl -s http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | python -m json.tool
 {
@@ -107,7 +108,7 @@ concurrent requests.
 >
 ```
 
-##Update
+## Update
 ```bash
 >curl -s -X PUT http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | python -m json.tool
 {
@@ -130,7 +131,7 @@ concurrent requests.
 >
 ```
 
-##Delete
+## Delete
 ```bash
 >curl -s  -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179
 200
@@ -139,7 +140,7 @@ concurrent requests.
 >
 ```
 
-##Read All
+## Read All
 ```bash
 >#create 10 fruit resources
 >for i in `seq 10`; do curl -s -X POST http://127.0.0.1:8445/v1.0/fruits; done
