@@ -9,98 +9,67 @@ tier and interact with the service's data tier implemented
 using [CouchDB](http://couchdb.apache.org/).
 
 ```tor-async-couchdb``` documentation isn't as strong as it could be. This
-README.md, samples and test are best way to gain an understanding of how to
+README.md, samples and tests are best way to gain an understanding of how to
 use ```tor-async-couchdb```.
 
-```tor-async-couchdb``` has been used with
-the open source version of [CouchDB](http://couchdb.apache.org/),
-[Cloudant DBaaS](https://cloudant.com/product/),
+```tor-async-couchdb``` was originally created for use with
+[CouchDB](http://couchdb.apache.org/). ```tor-async-couchdb```
+has also been used with [Cloudant DBaaS](https://cloudant.com/product/)
 and [Cloudant Local](https://cloudant.com/cloudant-local/).
 
-```tor-async-couchdb``` grew  ... experience operating and scaling CouchDB ... experience got expressed/enforced by ```tor-async-couchdb``` and a number of conventions including:
+```tor-async-couchdb``` was created as a way to capture the best practices
+learned after operating and scaling a number of services that used CouchDB
+and Tornado. The bullets below summarize these best practices.
 
-* data models:
-  * every document should have a versioned type property
-  * (standard NoSQL data model thinking) should assume documents are chunky and retrieval of a single document is often all that's necessary to implement a chunk of service functionality
-  * are designed assuming conflicts will happen as part of regular operation
-  * are designed with full knowledge that sensitive data at rest is an information security concern that needs to be taken seriously and therefore each property should be evaluated against a
-data and information classification policy ([this](http://www.cmu.edu/iso/governance/guidelines/data-classification.html) and, if deemed senstive, the property should ideally
-be hashed ([bcrypt]([py-bcrypt](https://pypi.python.org/pypi/py-bcrypt/) and if not
-[SHA3-512](http://en.wikipedia.org/wiki/SHA-3)) and if it can't be hashed then
-encrypt using [Keyczar](http://www.keyczar.org/)
+* services should embrace eventual consistency
+* thoughts on data models:
+  * every document should have a versioned type property (ex *type=v9.99*)
+  * documents are chunky; retrieval of a single document is often all
+  that's necessary to implement a RESTful service's endpoint
+  ala standard NoSQL data model thinking
+  * assume conflicts happen as part of regular operation
+  * sensitive data at rest is
+  an information security concern;
+  each property should be evaluated against a data and information
+  classification policy; if a property is deemed sensitive it should, ideally,
+  be hashed ([bcrypt]([py-bcrypt](https://pypi.python.org/pypi/py-bcrypt/) preferred
+  and if not [SHA3-512](http://en.wikipedia.org/wiki/SHA-3));
+  if a sensitive property can't be hashed it should be encrypted using
+  [Keyczar](http://www.keyczar.org/) - [this](http://www.cmu.edu/iso/governance/guidelines/data-classification.html)
+  is a good example of data classification
 * CouchDB, not the service tier, should generate document IDs
 * document retrieval should be done through views against document properties not document IDs
 * one design document per view
-* services should embrace eventual consistency
 * horizontally scaling CouchDB should be done using infrastructure (CouchDB 2.0 and Cloudant)
 not application level sharding
 * direct tampering of data in the database by DBAs is undesirable and therefore
 tamper resistance is valued
 
-#Capabilities
+# Using
 
-When thinking about ```tor-async-couchdb``` capabilities it's
-probably helpful to think about them in
-[this architectural context](https://github.com/simonsdave/microservice-architecture).
+Add the following to your project's ```setup.py```:
 
-##Functional Capabilities
-* **Python object to CouchDB doc mapping** - easy mapping instances of
-Python model classes (instances) to CouchDB documents
-* **async [CRUD](http://en.wikipedia.org/wiki/Create,_read,_update_and_delete)** operations on model instances
-* **async collections retrieval** - async retrieval of collections of model instances
-* **async retrieval by any document property** - async'ly retrieve model instances
-and collections of model instances by querying any CouchDB document property
-* **CouchDB b-tree friendly document IDs**
-* ```tor-async-couchdb```'s interface encourages users
-of the package to deal with CouchDB's document conflict
-errors using a simple retry pattern
-* encourages an approach to **NoSQL data modeling** that enables
-  * **automated reconciliation of document conflicts**
-  * **satisfying data and information classification policies**
-* :TODO: never delete/most recent style queries
-* a collection of utility classes that make creating a
-Python based **CouchDB database installer** possible in only a few lines of code
-* async retrieval of database and view metrics
-
-##Security Capabilities
-* app tier optionally **authenticate to CouchDB using BASIC authentication**
-* with well defined points of extensibility in Python object to
-CouchDB document mapping enabling **per property encryption/hashing**
-* **anti-tampering** which ensures CouchDB documents
-can only be created and updated by a service's application tier
-
-#Using
-
-Add the following line to your requirements.txt
-```
-git+git://github.com/simonsdave/tor-async-couchdb.git@master
-```
-
-If you have a setup.py make these changes:
 ```python
 from setuptools import setup
 setup(
     install_requires=[
-        "tor-async-couchdb==1.0.0",
+        "tor-async-couchdb==0.30.0",
     ],
     dependency_links=[
-        "http://github.com/simonsdave/tor-async-couchdb/tarball/master#egg=tor-async-couchdb-1.0.0",
+        "https://github.com/simonsdave/tor-async-couchdb/tarball/v0.30.0#egg=tor-async-couchdb-0.30.0",
     ],
 ```
 
-Configure tor-async-couchdb in your service's mainline.
-Typically we'd expect the configuration options come come
+Configure ```tor-async-couchdb``` in your service's mainline.
+Typically the configuration options are expected to come
 from a configuration file and/or the service's command line.
+
 ```python
 from tor_async_couchdb import async_model_actions
 
-async_model_actions.user_store = "http://127.0.0.1:5984/database"
-async_model_actions.tampering_signer = None # keyczar signer
+async_model_actions.database = "http://127.0.0.1:5984/database"
+async_model_actions.tampering_signer = None
 async_model_actions.username = None
 async_model_actions.password = None
-async_model_actions.validate_cert = False
+async_model_actions.validate_cert = True
 ```
-
-Instances of a model class are saved in CouchDB as a document with
-a ```type``` property set to a value like ```boo_v1.0```.
-All model classes are derived from ```tor_async_couchdb.model.Model``` base class.
