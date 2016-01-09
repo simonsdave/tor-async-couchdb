@@ -1,18 +1,41 @@
 # tor-async-couchdb
 [![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT) ![Python 2.7](https://img.shields.io/badge/python-2.7-FFC100.svg?style=flat) [![Requirements Status](https://requires.io/github/simonsdave/tor-async-couchdb/requirements.svg?branch=master)](https://requires.io/github/simonsdave/tor-async-couchdb/requirements/?branch=master) [![Build Status](https://travis-ci.org/simonsdave/tor-async-couchdb.svg)](https://travis-ci.org/simonsdave/tor-async-couchdb) [![Coverage Status](https://coveralls.io/repos/simonsdave/tor-async-couchdb/badge.svg)](https://coveralls.io/r/simonsdave/tor-async-couchdb) [![Code Health](https://landscape.io/github/simonsdave/tor-async-couchdb/master/landscape.svg?style=flat)](https://landscape.io/github/simonsdave/tor-async-couchdb/master)
 
-tor-async-couchdb is a [Tornado](http://www.tornadoweb.org/en/stable/)
-async client for [CouchDB](http://couchdb.apache.org/).
-tor-async-couchdb is intended to operate as part of a service's application
-tier (implemented using Tornado's [Asynchronous and non-Blocking I/O](http://tornado.readthedocs.org/en/latest/guide/async.html))
-and interact with the service's data tier (implemented using CouchDB).
+```tor-async-couchdb``` is a [Tornado](http://www.tornadoweb.org/en/stable/)
+[async](http://tornado.readthedocs.org/en/latest/guide/async.html) client
+for [CouchDB](http://couchdb.apache.org/).
+```tor-async-couchdb``` is intended to operate as part of a service's application
+tier and interact with the service's data tier implemented
+using [CouchDB](http://couchdb.apache.org/).
 
->```tor-async-couchdb``` documentation isn't currently as strong as it could be - tests
-and in particular samples are best way to gain an understanding of the code and capabilities
+```tor-async-couchdb``` documentation isn't as strong as it could be. This
+README.md, samples and test are best way to gain an understanding of how to
+use ```tor-async-couchdb```.
 
->```tor-async-couchdb``` has been used with although not extensively tested
-with [Cloudant DBaaS](https://cloudant.com/product/)
-and [Cloudant Local](https://cloudant.com/cloudant-local/)
+```tor-async-couchdb``` has been used with
+the open source version of [CouchDB](http://couchdb.apache.org/),
+[Cloudant DBaaS](https://cloudant.com/product/),
+and [Cloudant Local](https://cloudant.com/cloudant-local/).
+
+```tor-async-couchdb``` grew  ... experience operating and scaling CouchDB ... experience got expressed/enforced by ```tor-async-couchdb``` and a number of conventions including:
+
+* data models:
+  * every document should have a versioned type property
+  * (standard NoSQL data model thinking) should assume documents are chunky and retrieval of a single document is often all that's necessary to implement a chunk of service functionality
+  * are designed assuming conflicts will happen as part of regular operation
+  * are designed with full knowledge that sensitive data at rest is an information security concern that needs to be taken seriously and therefore each property should be evaluated against a
+data and information classification policy ([this](http://www.cmu.edu/iso/governance/guidelines/data-classification.html) and, if deemed senstive, the property should ideally
+be hashed ([bcrypt]([py-bcrypt](https://pypi.python.org/pypi/py-bcrypt/) and if not
+[SHA3-512](http://en.wikipedia.org/wiki/SHA-3)) and if it can't be hashed then
+encrypt using [Keyczar](http://www.keyczar.org/)
+* CouchDB, not the service tier, should generate document IDs
+* document retrieval should be done through views against document properties not document IDs
+* one design document per view
+* services should embrace eventual consistency
+* horizontally scaling CouchDB should be done using infrastructure (CouchDB 2.0 and Cloudant)
+not application level sharding
+* direct tampering of data in the database by DBAs is undesirable and therefore
+tamper resistance is valued
 
 #Capabilities
 
