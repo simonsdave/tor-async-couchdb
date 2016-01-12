@@ -37,8 +37,16 @@ _design_doc = _design_doc.replace("%TYPE_NAME%", _type_name)
 
 class Boo(Model):
 
-    def __init__(self, **kwargs):
-        Model.__init__(self, **kwargs)
+    fruits = [
+        'apple',
+        'pear',
+        'fig',
+        'orange',
+        'kiwi',
+    ]
+
+    def __init__(self, *args, **kwargs):
+        Model.__init__(self, *args, **kwargs)
 
         if 'doc' in kwargs:
             doc = kwargs['doc']
@@ -47,15 +55,8 @@ class Boo(Model):
             self.fruit = doc['fruit']
             return
 
-        self.boo_id = kwargs['boo_id']
-        fruits = [
-            'apple',
-            'pear',
-            'fig',
-            'orange',
-            'kiwi',
-        ]
-        self.fruit = random.choice(fruits)
+        self.boo_id = kwargs.get('boo_id', uuid.uuid4().hex)
+        self.fruit = random.choice(type(self).fruits)
 
     def as_doc_for_store(self):
         rv = Model.as_doc_for_store(self)
@@ -101,7 +102,8 @@ class RequestHandler(tornado.web.RequestHandler):
                 self.set_status(httplib.CREATED)
                 self.finish()
 
-            boo = Boo(boo_id=uuid.uuid4().hex)
+            id = self.get_query_argument('id', None)
+            boo = Boo(_id=id) if id else Boo()
             ap = AsyncBooPersister(boo)
             ap.persist(on_persist_done)
             return
@@ -195,7 +197,7 @@ class SpecifyDocIdIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
             'content-type': 'application/json',
         }
         response = self.fetch(
-            '/boo/create',
+            '/boo/create?id=%s' % uuid.uuid4().hex,
             method='POST',
             headers=tornado.httputil.HTTPHeaders(headers),
             body=json.dumps(body))
@@ -227,3 +229,5 @@ class SpecifyDocIdIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         self.assertEqual(boo['fruit'], other_boo['fruit'])
         self.assertEqual(boo['_id'], other_boo['_id'])
         self.assertEqual(boo['_rev'], other_boo['_rev'])
+
+        self.assertNotEqual(boo['_id'], other_boo['boo_id'])
