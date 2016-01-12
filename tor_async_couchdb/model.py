@@ -4,12 +4,13 @@ class Model(object):
     def __init__(self, **kwargs):
         object.__init__(self)
 
-        doc = kwargs["doc"] if "doc" in kwargs else {}
-
-        self._id = doc.get("_id", None)
-        self._rev = doc.get("_rev", None)
-
-        self._callback = None
+        doc = kwargs.get('doc', None)
+        if doc is not None:
+            self._id = doc.get('_id', None)
+            self._rev = doc.get('_rev', None)
+        else:
+            self._id = kwargs.get('_id', None)
+            self._rev = kwargs.get('_rev', None)
 
     def as_doc_for_store(self):
         rv = {}
