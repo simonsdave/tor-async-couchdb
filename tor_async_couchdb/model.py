@@ -1,7 +1,7 @@
 class Model(object):
     """Abstract base class for all models."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         object.__init__(self)
 
         doc = kwargs.get('doc', None)
@@ -15,7 +15,7 @@ class Model(object):
     def as_doc_for_store(self):
         rv = {}
         if self._id:
-            rv["_id"] = self._id
+            rv['_id'] = self._id
         if self._rev:
-            rv["_rev"] = self._rev
+            rv['_rev'] = self._rev
         return rv
