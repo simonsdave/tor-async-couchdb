@@ -19,22 +19,6 @@ from ..model import Model
 # db names must start with a letter
 _database_url = r'http://127.0.0.1:5984/a%s' % uuid.uuid4().hex
 
-# curl http://127.0.0.1:5984/davewashere/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?include_docs=true
-_design_doc_name = 'fruit_by_fruit_id'
-_type_name = 'fruit_v1.0'
-_design_doc = (
-    '{'
-    '    "language": "javascript",'
-    '    "views": {'
-    '        "%VIEW_NAME%": {'
-    '            "map": "function(doc) { if (doc.type.match(/^%TYPE_NAME%/i)) { emit(doc.fruit_id) } }"'
-    '        }'
-    '    }'
-    '}'
-)
-_design_doc = _design_doc.replace("%VIEW_NAME%", _design_doc_name)
-_design_doc = _design_doc.replace("%TYPE_NAME%", _type_name)
-
 
 class Fruit(Model):
 
@@ -46,23 +30,22 @@ class Fruit(Model):
         'kiwi',
     ]
 
+    _type_name = 'fruit_v1.0'
+
     def __init__(self, *args, **kwargs):
         Model.__init__(self, *args, **kwargs)
 
         if 'doc' in kwargs:
             doc = kwargs['doc']
-            assert doc['type'] == _type_name
-            self.fruit_id = doc['fruit_id']
+            assert doc['type'] == type(self)._type_name
             self.fruit = doc['fruit']
             return
 
-        self.fruit_id = kwargs.get('fruit_id', uuid.uuid4().hex)
         self.fruit = random.choice(type(self).fruits)
 
     def as_doc_for_store(self):
         rv = Model.as_doc_for_store(self)
-        rv['type'] = _type_name
-        rv['fruit_id'] = self.fruit_id
+        rv['type'] = type(self)._type_name
         rv['fruit'] = self.fruit
         return rv
 
@@ -73,16 +56,16 @@ class AsyncFruitPersister(async_model_actions.AsyncPersister):
         async_model_actions.AsyncPersister.__init__(self, fruit, [], async_state)
 
 
-class AsyncFruitRetriever(async_model_actions.AsyncModelRetriever):
+class AsyncFruitRetriever(async_model_actions.AsyncModelRetrieverByDocumentID):
 
-    def __init__(self, fruit_id, async_state=None):
-        async_model_actions.AsyncModelRetriever.__init__(
+    def __init__(self, _id, async_state=None):
+        async_model_actions.AsyncModelRetrieverByDocumentID.__init__(
             self,
-            'fruit_by_fruit_id',
-            fruit_id,
+            _id,
             async_state)
 
     def create_model_from_doc(self, doc):
+        print "*" * 256
         return Fruit(doc=doc)
 
 
@@ -104,8 +87,7 @@ class RequestHandler(tornado.web.RequestHandler):
                 self.finish()
 
             json_request_body = json.loads(self.request.body)
-            _id = json_request_body.get('_id', None)
-            fruit = Fruit(_id=_id) if id else Fruit()
+            fruit = Fruit(_id=json_request_body['_id'])
             ap = AsyncFruitPersister(fruit)
             ap.persist(on_persist_done)
             return
@@ -122,8 +104,7 @@ class RequestHandler(tornado.web.RequestHandler):
                 self.finish()
 
             json_request_body = json.loads(self.request.body)
-            fruit_id = json_request_body['fruit_id']
-            abr = AsyncFruitRetriever(fruit_id)
+            abr = AsyncFruitRetriever(json_request_body['_id'])
             abr.fetch(on_fetch_done)
             return
 
@@ -134,7 +115,6 @@ class RequestHandler(tornado.web.RequestHandler):
         return {
             '_id': fruit._id,
             '_rev': fruit._rev,
-            'fruit_id': fruit.fruit_id,
             'fruit': fruit.fruit,
         }
 
@@ -154,23 +134,15 @@ class SpecifyDocIdIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         # create database
         response = requests.put(_database_url)
         assert response.status_code == httplib.CREATED
-
-        # install design doc
-        url = '%s/_design/%s' % (_database_url, _design_doc_name)
-        response = requests.put(
-            url,
-            data=_design_doc,
-            headers={'Content-Type': 'application/json'})
-        assert response.status_code == httplib.CREATED
-
         # get async_model_actions using our temp database
         async_model_actions.database = _database_url
 
     @classmethod
     def tearDownClass(cls):
         # delete database
-        response = requests.delete(_database_url)
-        assert response.status_code == httplib.OK
+        # response = requests.delete(_database_url)
+        # assert response.status_code == httplib.OK
+        pass
 
     def get_app(self):
         handlers = [
@@ -181,16 +153,6 @@ class SpecifyDocIdIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         ]
         return tornado.web.Application(handlers=handlers)
 
-    def test_all_good_with_couchdb_generating_ids(self):
-        # create at least 10 and no more than 15 persistent instances of Fruit
-        fruits = [self._create_fruit() for i in range(0, random.randint(10, 15))]
-
-        # for each created Fruit retrieve the persisted Fruit and
-        # confirm the created and persisted Fruit are the same
-        for fruit in fruits:
-            persisted_fruit = self._get_fruit(fruit['fruit_id'])
-            self.assertTwoFruitsEqual(fruit, persisted_fruit)
-
     def test_all_good_with_service_generating_ids(self):
         # create at least 10 and no more than 15 persistent instances of Fruit
         fruits = [self._create_fruit(_id=uuid.uuid4().hex) for i in range(0, random.randint(10, 15))]
@@ -198,18 +160,14 @@ class SpecifyDocIdIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         # for each created Fruit retrieve the persisted Fruit and
         # confirm the created and persisted Fruit are the same
         for fruit in fruits:
-            persisted_fruit = self._get_fruit(fruit['fruit_id'])
-            self.assertTwoFruitsEqual(
-                fruit,
-                persisted_fruit,
-                expected_underscore_id=fruit['_id'])
+            persisted_fruit = self._get_fruit(fruit['_id'])
+            self.assertTwoFruitsEqual(fruit, persisted_fruit)
 
-    def _create_fruit(self, _id=None):
+    def _create_fruit(self, _id):
         """Ask the request handler to create a persistent instance of Fruit."""
         body = {
+            '_id': _id,
         }
-        if _id is not None:
-            body['_id'] = _id
         headers = {
             'content-type': 'application/json',
         }
@@ -220,14 +178,13 @@ class SpecifyDocIdIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
             body=json.dumps(body))
         self.assertEqual(response.code, httplib.CREATED)
         fruit = json.loads(response.body)
-        if _id is not None:
-            self.assertEqual(fruit['_id'], _id)
+        self.assertEqual(fruit['_id'], _id)
         return fruit
 
-    def _get_fruit(self, fruit_id):
+    def _get_fruit(self, _id):
         """Ask the request handler to retrieve a persisted Fruit."""
         body = {
-            'fruit_id': fruit_id,
+            '_id': _id,
         }
         headers = {
             'content-type': 'application/json',
@@ -245,12 +202,6 @@ class SpecifyDocIdIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
     def assertTwoFruitsEqual(self, fruit, other_fruit, expected_underscore_id=None):
         self.assertIsNotNone(fruit)
         self.assertIsNotNone(other_fruit)
-        self.assertEqual(fruit['fruit_id'], other_fruit['fruit_id'])
         self.assertEqual(fruit['fruit'], other_fruit['fruit'])
         self.assertEqual(fruit['_id'], other_fruit['_id'])
         self.assertEqual(fruit['_rev'], other_fruit['_rev'])
-
-        self.assertNotEqual(fruit['_id'], other_fruit['fruit_id'])
-
-        if expected_underscore_id is not None:
-            self.assertEqual(fruit['_id'], expected_underscore_id)

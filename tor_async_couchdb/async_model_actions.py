@@ -106,11 +106,15 @@ class CouchDBAsyncHTTPClient(object):
     for subsequent use in performance analysis and health monitoring.
     """
 
-    def __init__(self, expected_response_code, create_model_from_doc):
+    def __init__(self,
+                 expected_response_code,
+                 create_model_from_doc,
+                 expect_one_document=False):
         object.__init__(self)
 
         self.expected_response_code = expected_response_code
         self.create_model_from_doc = create_model_from_doc
+        self.expect_one_document = expect_one_document
 
         self._callback = None
 
@@ -222,33 +226,49 @@ class CouchDBAsyncHTTPClient(object):
                 response_body.get("rev", None))
             return
 
+        if self.expect_one_document:
+            model = self._check_doc_for_tampering_and_if_ok_create_model(response_body)
+            self._call_callback(
+                model is not None,
+                False,              # is_conflict
+                model)
+            return
+
         models = []
         for row in response_body.get("rows", []):
             doc = row.get("doc", {})
-            if tampering_signer:
-                if not tamper.verify(tampering_signer, doc):
-                    _logger.error(
-                        "tampering detected in doc '%s'",
-                        doc.get("_id", "?????"))
-                    continue
-            model = self.create_model_from_doc(doc)
-            models.append(model)
+            model = self._check_doc_for_tampering_and_if_ok_create_model(doc)
+            if model is not None:
+                models.append(model)
 
         self._call_callback(
             True,                   # is_ok
             False,                  # is_conflict
-            models,
-            response_body.get("id", None),
-            response_body.get("rev", None))
+            models)
+
+    def _check_doc_for_tampering_and_if_ok_create_model(self, doc):
+        if tampering_signer:
+            if not tamper.verify(tampering_signer, doc):
+                _logger.error(
+                    "tampering detected in doc '%s'",
+                    doc["_id"])
+                return None
+        return self.create_model_from_doc(doc)
 
     def _call_callback(self,
                        is_ok,
                        is_conflict,
-                       models_or_response_body=None,
+                       model_models_or_response_body=None,
                        _id=None,
                        _rev=None):
         assert self._callback is not None
-        self._callback(is_ok, is_conflict, models_or_response_body, _id, _rev, self)
+        self._callback(
+            is_ok,
+            is_conflict,
+            model_models_or_response_body,
+            _id,
+            _rev,
+            self)
         self._callback = None
 
 
@@ -259,6 +279,47 @@ class AsyncAction(object):
         object.__init__(self)
 
         self.async_state = async_state
+
+
+class AsyncModelRetrieverByDocumentID(AsyncAction):
+    """Async'ly retrieve a model from the CouchDB database
+    by document ID.
+    """
+
+    def __init__(self, id, async_state):
+        AsyncAction.__init__(self, async_state)
+
+        self.id = id
+
+        self._callback = None
+
+    def fetch(self, callback):
+        assert self._callback is None
+        self._callback = callback
+
+        request = CouchDBAsyncHTTPRequest(self.id, 'GET', None)
+
+        cac = CouchDBAsyncHTTPClient(
+            httplib.OK,                     # expected_response_code
+            self.create_model_from_doc,
+            True)                           # expect_one_document
+        cac.fetch(request, self._on_cac_fetch_done)
+
+    def _on_cac_fetch_done(self, is_ok, is_conflict, model, _id, _rev, cac):
+        assert is_conflict is False
+        self._call_callback(is_ok, model)
+
+    def create_model_from_doc(self, doc):
+        """Concrete classes derived from this class must implement
+        this method which takes a dictionary (```doc```) and creates
+        a model instance.
+        """
+        raise NotImplementedError()
+
+    def _call_callback(self, is_ok, model=None):
+        assert self._callback
+        self._callback(is_ok, model, self)
+        self._callback = None
 
 
 class BaseAsyncModelRetriever(AsyncAction):
