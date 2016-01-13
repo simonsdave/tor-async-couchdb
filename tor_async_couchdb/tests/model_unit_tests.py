@@ -28,6 +28,13 @@ class ModelTaseCase(unittest.TestCase):
         self.assertEqual(model._id, doc["_id"])
         self.assertEqual(model._rev, doc["_rev"])
 
+    def test_ctr_with_id_and_rev_args(self):
+        _id = uuid.uuid4().hex
+        _rev = uuid.uuid4().hex
+        model = Model(_id=_id, _rev=_rev)
+        self.assertEqual(model._id, _id)
+        self.assertEqual(model._rev, _rev)
+
     def test_as_doc_for_store_not_initalized(self):
         doc = {}
         model = Model(doc=doc)
