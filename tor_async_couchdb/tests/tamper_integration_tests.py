@@ -25,14 +25,14 @@ from ..model import Model
 
 _database_url = r"http://127.0.0.1:5984/davewashere"
 
-# curl http://127.0.0.1:5984/davewashere/_design/boo_by_boo_id/_view/boo_by_boo_id?include_docs=true
-_design_doc_name = "boo_by_boo_id"
+# curl http://127.0.0.1:5984/davewashere/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?include_docs=true
+_design_doc_name = "fruit_by_fruit_id"
 _design_doc = (
     '{'
     '    "language": "javascript",'
     '    "views": {'
     '        "%VIEW_NAME%": {'
-    '            "map": "function(doc) { if (doc.type.match(/^boo_v1.0/i)) { emit(doc.boo_id) } }"'
+    '            "map": "function(doc) { if (doc.type.match(/^fruit_v1.0/i)) { emit(doc.fruit_id) } }"'
     '        }'
     '    }'
     '}'
@@ -40,24 +40,24 @@ _design_doc = (
 _design_doc = _design_doc.replace("%VIEW_NAME%", _design_doc_name)
 
 
-class Boo(Model):
+class Fruit(Model):
 
     def __init__(self, **kwargs):
         Model.__init__(self, **kwargs)
 
         if "doc" in kwargs:
             doc = kwargs["doc"]
-            self.boo_id = doc["boo_id"]
+            self.fruit_id = doc["fruit_id"]
             self.fruit = doc["fruit"]
             return
 
-        self.boo_id = kwargs["boo_id"]
+        self.fruit_id = kwargs["fruit_id"]
         self.fruit = type(self).get_random_fruit()
 
     def as_doc_for_store(self):
         rv = Model.as_doc_for_store(self)
-        rv["type"] = "boo_v1.0"
-        rv["boo_id"] = self.boo_id
+        rv["type"] = "fruit_v1.0"
+        rv["fruit_id"] = self.fruit_id
         rv["fruit"] = self.fruit
         return rv
 
@@ -78,102 +78,102 @@ class Boo(Model):
                 return fruit
 
 
-class AsyncBooPersister(async_model_actions.AsyncPersister):
+class AsyncFruitPersister(async_model_actions.AsyncPersister):
 
-    def __init__(self, boo, async_state=None):
-        async_model_actions.AsyncPersister.__init__(self, boo, [], async_state)
+    def __init__(self, fruit, async_state=None):
+        async_model_actions.AsyncPersister.__init__(self, fruit, [], async_state)
 
 
-class AsyncBooRetriever(async_model_actions.AsyncModelRetriever):
+class AsyncFruitRetriever(async_model_actions.AsyncModelRetriever):
 
-    def __init__(self, boo_id, async_state=None):
+    def __init__(self, fruit_id, async_state=None):
         async_model_actions.AsyncModelRetriever.__init__(
             self,
-            "boo_by_boo_id",
-            boo_id,
+            "fruit_by_fruit_id",
+            fruit_id,
             async_state)
 
     def create_model_from_doc(self, doc):
-        return Boo(doc=doc)
+        return Fruit(doc=doc)
 
 
-class AsyncBoosRetriever(async_model_actions.AsyncModelsRetriever):
+class AsyncFruitsRetriever(async_model_actions.AsyncModelsRetriever):
 
     def __init__(self, start_key, end_key, async_state=None):
         async_model_actions.AsyncModelsRetriever.__init__(
             self,
-            "boo_by_boo_id",
+            "fruit_by_fruit_id",
             start_key,
             end_key,
             async_state)
 
     def create_model_from_doc(self, doc):
-        return Boo(doc=doc)
+        return Fruit(doc=doc)
 
 
 class RequestHandler(tornado.web.RequestHandler):
     """The ```TamperingIntegrationTestCase``` integration tests make
     async requests to this Tornado request handler which then calls
     the async model I/O classes to operate on persistent instances of
-    Boo. Why is this request handler needed? The async model I/O
+    Fruit. Why is this request handler needed? The async model I/O
     classes need to operate in the context of a Tornado I/O loop.
     """
 
-    post_url_spec = r"/boo/(.+)"
+    post_url_spec = r"/fruit/(.+)"
 
     @tornado.web.asynchronous
     def post(self, command):
 
         if command == "create":
             def on_persist_done(is_ok, is_conflict, ap):
-                self.write(json.dumps(self._boo_as_dict(ap.model)))
+                self.write(json.dumps(self._fruit_as_dict(ap.model)))
                 self.set_status(httplib.CREATED)
                 self.finish()
 
-            boo = Boo(boo_id=uuid.uuid4().hex)
-            ap = AsyncBooPersister(boo)
+            fruit = Fruit(fruit_id=uuid.uuid4().hex)
+            ap = AsyncFruitPersister(fruit)
             ap.persist(on_persist_done)
             return
 
         if command == "get":
-            def on_fetch_done(is_ok, boo, abr):
-                if boo is None:
+            def on_fetch_done(is_ok, fruit, abr):
+                if fruit is None:
                     self.set_status(httplib.NOT_FOUND)
                     self.finish()
                     return
 
-                self.write(json.dumps(self._boo_as_dict(boo)))
+                self.write(json.dumps(self._fruit_as_dict(fruit)))
                 self.set_status(httplib.OK)
                 self.finish()
 
             json_request_body = json.loads(self.request.body)
-            boo_id = json_request_body.get("boo_id", None)
-            assert boo_id is not None
-            abr = AsyncBooRetriever(boo_id)
+            fruit_id = json_request_body.get("fruit_id", None)
+            assert fruit_id is not None
+            abr = AsyncFruitRetriever(fruit_id)
             abr.fetch(on_fetch_done)
             return
 
         if command == "get_all":
-            def on_fetch_done(is_ok, boos, absr):
-                assert boos is not None
-                dicts = [self._boo_as_dict(boo) for boo in boos]
+            def on_fetch_done(is_ok, fruits, absr):
+                assert fruits is not None
+                dicts = [self._fruit_as_dict(fruit) for fruit in fruits]
                 self.write(json.dumps(dicts))
                 self.set_status(httplib.OK)
                 self.finish()
 
-            absr = AsyncBoosRetriever(start_key=None, end_key=None)
+            absr = AsyncFruitsRetriever(start_key=None, end_key=None)
             absr.fetch(on_fetch_done)
             return
 
         self.set_status(httplib.NOT_FOUND)
         self.finish()
 
-    def _boo_as_dict(self, boo):
+    def _fruit_as_dict(self, fruit):
         return {
-            "_id": boo._id,
-            "_rev": boo._rev,
-            "boo_id": boo.boo_id,
-            "fruit": boo.fruit,
+            "_id": fruit._id,
+            "_rev": fruit._rev,
+            "fruit_id": fruit.fruit_id,
+            "fruit": fruit.fruit,
         }
 
 
@@ -185,7 +185,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         """Setup the integration tests environment. Specifically:
 
         -- create a temporary database including creating a design doc
-        which permits reading persistant instances of Boo
+        which permits reading persistant instances of Fruit
         -- create a tampering signer
         -- configure the async model I/O classes to use the newly
         created tampering signer and temporary database
@@ -242,104 +242,104 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         return tornado.web.Application(handlers=handlers)
 
     def test_all_good(self):
-        # create at least 10 and no more than 15 persistent instances of Boo
-        boos = [self._create_boo() for i in range(0, random.randint(10, 15))]
+        # create at least 10 and no more than 15 persistent instances of Fruit
+        fruits = [self._create_fruit() for i in range(0, random.randint(10, 15))]
 
-        # for each created Boo retrieve the persisted Boo and
-        # confirm the created and persisted Boo are the same
-        for boo in boos:
-            persisted_boo = self._get_boo(boo.boo_id)
-            self.assertTwoBoosEqual(boo, persisted_boo)
+        # for each created Fruit retrieve the persisted Fruit and
+        # confirm the created and persisted Fruit are the same
+        for fruit in fruits:
+            persisted_fruit = self._get_fruit(fruit.fruit_id)
+            self.assertTwoFruitsEqual(fruit, persisted_fruit)
 
-        self.assertTwoCollectionsOfBoosAreEqual(
-            boos,
-            self._get_all_boos())
+        self.assertTwoCollectionsOfFruitsAreEqual(
+            fruits,
+            self._get_all_fruits())
 
-        # select one of the Boo's @ random, retrieve the persisted verison
-        # of the Boo, tamper with it by changing its fruit and confirm the Boo
+        # select one of the Fruit's @ random, retrieve the persisted verison
+        # of the Fruit, tamper with it by changing its fruit and confirm the Fruit
         # is no longer retrievable
-        boo = boos.pop(random.randint(0, len(boos) - 1))
-        self._change_boo_fruit_and_persist(boo)
+        fruit = fruits.pop(random.randint(0, len(fruits) - 1))
+        self._change_fruit_fruit_and_persist(fruit)
 
-        self.assertIsNone(self._get_boo(boo.boo_id))
-        self.assertTwoCollectionsOfBoosAreEqual(
-            boos,
-            self._get_all_boos())
+        self.assertIsNone(self._get_fruit(fruit.fruit_id))
+        self.assertTwoCollectionsOfFruitsAreEqual(
+            fruits,
+            self._get_all_fruits())
 
-        # select one of the Boo's @ random, retrieve the persisted verison
-        # of the Boo, tamper with it by removing the Boo's signature
-        boo = boos.pop(random.randint(0, len(boos) - 1))
-        self._remove_boo_signature_and_persist(boo)
+        # select one of the Fruit's @ random, retrieve the persisted verison
+        # of the Fruit, tamper with it by removing the Fruit's signature
+        fruit = fruits.pop(random.randint(0, len(fruits) - 1))
+        self._remove_fruit_signature_and_persist(fruit)
 
-        self.assertIsNone(self._get_boo(boo.boo_id))
-        self.assertTwoCollectionsOfBoosAreEqual(
-            boos,
-            self._get_all_boos())
+        self.assertIsNone(self._get_fruit(fruit.fruit_id))
+        self.assertTwoCollectionsOfFruitsAreEqual(
+            fruits,
+            self._get_all_fruits())
 
-        # select one of the Boo's @ random, retrieve the persisted verison
-        # of the Boo, tamper with it by changing the Boo's signature
-        boo = boos.pop(random.randint(0, len(boos) - 1))
-        self._change_boo_signature_and_persist(boo)
+        # select one of the Fruit's @ random, retrieve the persisted verison
+        # of the Fruit, tamper with it by changing the Fruit's signature
+        fruit = fruits.pop(random.randint(0, len(fruits) - 1))
+        self._change_fruit_signature_and_persist(fruit)
 
-        self.assertIsNone(self._get_boo(boo.boo_id))
-        self.assertTwoCollectionsOfBoosAreEqual(
-            boos,
-            self._get_all_boos())
+        self.assertIsNone(self._get_fruit(fruit.fruit_id))
+        self.assertTwoCollectionsOfFruitsAreEqual(
+            fruits,
+            self._get_all_fruits())
 
-    def _create_boo(self):
-        """Ask the request handler to create a persistent instance of Boo."""
+    def _create_fruit(self):
+        """Ask the request handler to create a persistent instance of Fruit."""
         body = {
         }
         headers = {
             "content-type": "application/json; charset=utf-8",
         }
         response = self.fetch(
-            "/boo/create",
+            "/fruit/create",
             method="POST",
             headers=tornado.httputil.HTTPHeaders(headers),
             body=json.dumps(body))
         self.assertEqual(response.code, httplib.CREATED)
-        return Boo(doc=json.loads(response.body))
+        return Fruit(doc=json.loads(response.body))
 
-    def _get_boo(self, boo_id):
-        """Ask the request handler to retrieve a persisted Boo."""
+    def _get_fruit(self, fruit_id):
+        """Ask the request handler to retrieve a persisted Fruit."""
         body = {
-            "boo_id": boo_id,
+            "fruit_id": fruit_id,
         }
         headers = {
             "content-type": "application/json; charset=utf-8",
         }
         response = self.fetch(
-            "/boo/get",
+            "/fruit/get",
             method="POST",
             headers=tornado.httputil.HTTPHeaders(headers),
             body=json.dumps(body))
         if response.code == httplib.NOT_FOUND:
             return None
         self.assertEqual(response.code, httplib.OK)
-        return Boo(doc=json.loads(response.body))
+        return Fruit(doc=json.loads(response.body))
 
-    def _get_all_boos(self):
-        """Ask the request handler to retrieve all persisted Boos."""
+    def _get_all_fruits(self):
+        """Ask the request handler to retrieve all persisted Fruits."""
         body = {
         }
         headers = {
             "content-type": "application/json; charset=utf-8",
         }
         response = self.fetch(
-            "/boo/get_all",
+            "/fruit/get_all",
             method="POST",
             headers=tornado.httputil.HTTPHeaders(headers),
             body=json.dumps(body))
         self.assertEqual(response.code, httplib.OK)
         docs = json.loads(response.body)
-        boos = [Boo(doc=doc) for doc in docs]
-        return boos
+        fruits = [Fruit(doc=doc) for doc in docs]
+        return fruits
 
-    def _change_boo_fruit_and_persist(self, boo):
-        self.assertIsNotNone(boo)
+    def _change_fruit_fruit_and_persist(self, fruit):
+        self.assertIsNotNone(fruit)
 
-        url = '%s/%s' % (_database_url, boo._id)
+        url = '%s/%s' % (_database_url, fruit._id)
 
         response = requests.get(url)
         self.assertEqual(response.status_code, httplib.OK)
@@ -348,7 +348,7 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
         fruit = doc.get("fruit", None)
         self.assertIsNotNone(fruit)
 
-        new_fruit = Boo.get_random_fruit(fruit)
+        new_fruit = Fruit.get_random_fruit(fruit)
         self.assertIsNotNone(new_fruit)
         self.assertNotEqual(fruit, new_fruit)
         doc["fruit"] = new_fruit
@@ -359,10 +359,10 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
             headers={"Content-Type": "application/json; charset=utf8"})
         self.assertEqual(response.status_code, httplib.CREATED)
 
-    def _remove_boo_signature_and_persist(self, boo):
-        self.assertIsNotNone(boo)
+    def _remove_fruit_signature_and_persist(self, fruit):
+        self.assertIsNotNone(fruit)
 
-        url = '%s/%s' % (_database_url, boo._id)
+        url = '%s/%s' % (_database_url, fruit._id)
 
         response = requests.get(url)
         self.assertEqual(response.status_code, httplib.OK)
@@ -378,10 +378,10 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
             headers={"Content-Type": "application/json; charset=utf8"})
         self.assertEqual(response.status_code, httplib.CREATED)
 
-    def _change_boo_signature_and_persist(self, boo):
-        self.assertIsNotNone(boo)
+    def _change_fruit_signature_and_persist(self, fruit):
+        self.assertIsNotNone(fruit)
 
-        url = '%s/%s' % (_database_url, boo._id)
+        url = '%s/%s' % (_database_url, fruit._id)
 
         response = requests.get(url)
         self.assertEqual(response.status_code, httplib.OK)
@@ -397,27 +397,27 @@ class TamperingIntegrationTestCase(tornado.testing.AsyncHTTPTestCase):
             headers={"Content-Type": "application/json; charset=utf8"})
         self.assertEqual(response.status_code, httplib.CREATED)
 
-    def assertTwoBoosEqual(self, boo, other_boo):
-        self.assertIsNotNone(boo)
-        self.assertIsNotNone(other_boo)
-        self.assertEqual(boo.boo_id, other_boo.boo_id)
-        self.assertEqual(boo.fruit, other_boo.fruit)
-        self.assertEqual(boo._id, other_boo._id)
-        self.assertEqual(boo._rev, other_boo._rev)
+    def assertTwoFruitsEqual(self, fruit, other_fruit):
+        self.assertIsNotNone(fruit)
+        self.assertIsNotNone(other_fruit)
+        self.assertEqual(fruit.fruit_id, other_fruit.fruit_id)
+        self.assertEqual(fruit.fruit, other_fruit.fruit)
+        self.assertEqual(fruit._id, other_fruit._id)
+        self.assertEqual(fruit._rev, other_fruit._rev)
 
-    def assertTwoCollectionsOfBoosAreEqual(self, boos, other_boos):
-        self.assertIsNotNone(boos)
-        self.assertIsNotNone(other_boos)
-        self.assertEqual(len(boos), len(other_boos))
+    def assertTwoCollectionsOfFruitsAreEqual(self, fruits, other_fruits):
+        self.assertIsNotNone(fruits)
+        self.assertIsNotNone(other_fruits)
+        self.assertEqual(len(fruits), len(other_fruits))
 
-        boos_dict = {boo.boo_id: boo for boo in boos}
-        other_boos_dict = {boo.boo_id: boo for boo in other_boos}
+        fruits_dict = {fruit.fruit_id: fruit for fruit in fruits}
+        other_fruits_dict = {fruit.fruit_id: fruit for fruit in other_fruits}
 
-        # two boo's can't have the same boo_id
-        self.assertEqual(len(boos), len(boos_dict))
-        self.assertEqual(len(other_boos), len(other_boos_dict))
+        # two fruit's can't have the same fruit_id
+        self.assertEqual(len(fruits), len(fruits_dict))
+        self.assertEqual(len(other_fruits), len(other_fruits_dict))
 
-        for boo in boos:
-            other_boo = other_boos_dict.get(boo.boo_id, None)
-            self.assertIsNotNone(other_boo)
-            self.assertTwoBoosEqual(boo, other_boo)
+        for fruit in fruits:
+            other_fruit = other_fruits_dict.get(fruit.fruit_id, None)
+            self.assertIsNotNone(other_fruit)
+            self.assertTwoFruitsEqual(fruit, other_fruit)
