@@ -65,7 +65,6 @@ class AsyncFruitRetriever(async_model_actions.AsyncModelRetrieverByDocumentID):
             async_state)
 
     def create_model_from_doc(self, doc):
-        print "*" * 256
         return Fruit(doc=doc)
 
 
