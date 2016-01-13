@@ -349,7 +349,7 @@ class AsyncModelRetriever(BaseAsyncModelRetriever):
     """Async'ly retrieve a model from the CouchDB database."""
 
     def __init__(self, design_doc, key, async_state):
-        AsyncAction.__init__(self, async_state)
+        BaseAsyncModelRetriever.__init__(self, async_state)
 
         self.design_doc = design_doc
         self.key = key
@@ -377,7 +377,7 @@ class AsyncModelsRetriever(BaseAsyncModelRetriever):
     """Async'ly retrieve a collection of models from CouchDB."""
 
     def __init__(self, design_doc, start_key=None, end_key=None, async_state=None):
-        AsyncAction.__init__(self, async_state)
+        BaseAsyncModelRetriever.__init__(self, async_state)
 
         self.design_doc = design_doc
         self.start_key = start_key
