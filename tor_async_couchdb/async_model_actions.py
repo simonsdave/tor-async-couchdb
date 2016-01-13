@@ -66,8 +66,6 @@ class CouchDBAsyncHTTPRequest(tornado.httpclient.HTTPRequest):
     """
 
     def __init__(self, path, method, body_as_dict):
-        object.__init__(self)
-
         assert not path.startswith('/')
 
         url = "%s/%s" % (database, path)
@@ -286,10 +284,10 @@ class AsyncModelRetrieverByDocumentID(AsyncAction):
     by document ID.
     """
 
-    def __init__(self, id, async_state):
+    def __init__(self, document_id, async_state):
         AsyncAction.__init__(self, async_state)
 
-        self.id = id
+        self.document_id = document_id
 
         self._callback = None
 
@@ -297,7 +295,7 @@ class AsyncModelRetrieverByDocumentID(AsyncAction):
         assert self._callback is None
         self._callback = callback
 
-        request = CouchDBAsyncHTTPRequest(self.id, 'GET', None)
+        request = CouchDBAsyncHTTPRequest(self.document_id, 'GET', None)
 
         cac = CouchDBAsyncHTTPClient(
             httplib.OK,                     # expected_response_code
@@ -323,6 +321,11 @@ class AsyncModelRetrieverByDocumentID(AsyncAction):
 
 
 class BaseAsyncModelRetriever(AsyncAction):
+
+    def __init__(self, async_state):
+        AsyncAction.__init__(self, async_state)
+
+        self._callback = None
 
     def fetch(self, callback):
         assert self._callback is None
