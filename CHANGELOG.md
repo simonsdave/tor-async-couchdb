@@ -3,11 +3,16 @@ All notable changes to this project will be documented in this file.
 Format of this file follows [these](http://keepachangelog.com/) guidelines.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.40.0] - [2016-xx-xx]
+## [0.40.0] - [2016-01-13]
 
 ### Changed
 - removed constraint on pycurl rev; pycurl now needs to be >= 7.19.5.1
 - fixed exp_backoff sample
+- allow a document ID to be specified when a document is first written
+to CouchDB; also added AsyncModelRetrieverByDocumentID which allows
+retrieval of a document by document ID; these capabilities are the
+recommended pattern for using tor-async-couchdb but there are scenarios
+where it is useful
 
 ## [0.20.0] - [2015-10-26]
 
