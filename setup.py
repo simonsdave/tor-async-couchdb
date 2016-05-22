@@ -39,7 +39,7 @@ setup(
         "tor_async_couchdb",
     ],
     install_requires=[
-        "python-keyczar==0.715",
+        "python-keyczar==0.716",
         "requests>=2.7.0",
     ],
     version=version,
