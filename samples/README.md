@@ -1,10 +1,16 @@
 # Samples
 The samples below demonstrate how to use the capabilities
 of ```tor-async-couchdb```.
-The first sample ([basic sample](basic)) is very simple and uses only the fundamental
+The first sample ([basic](basic)) is very simple and uses only the fundamental
 features of ```tor-async-couchdb```. Subsequent samples build on
-[basic sample](basic) excercising increasingly more advanced features
+[basic](basic) exercising increasingly more advanced features
 of ```tor-async-couchdb```.
+
+Before running any of the samples you'll need to install
+some pre-reqs.
+
+```bash
+```
 
 In terms of the structure of the samples.
 Each of the samples is structured in the same way and follows
