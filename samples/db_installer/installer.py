@@ -21,6 +21,7 @@ class CommandLineParser(installer.CommandLineParser):
             description,
             "tor_async_couchdb_sample")
 
+
 if __name__ == "__main__":
     design_docs = os.path.join(os.path.abspath(
         os.path.dirname(__file__)), 'design_docs')

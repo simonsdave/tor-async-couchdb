@@ -32,6 +32,7 @@ def _create_fruit():
 
     return response.json()["fruit_id"]
 
+
 _fruit_ids = [_create_fruit() for i in range(0, _number_fruits)]
 
 
