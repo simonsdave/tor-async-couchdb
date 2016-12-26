@@ -18,13 +18,13 @@ class Fruit(Model):
                 raise Exception("Unknown fruit doc type '%s'" % doc_type)
 
             self.fruit_id = doc["fruit_id"]
-            self.fruit = doc["fruit"]
+            self.color = doc["color"]
             self.created_on = dateutil.parser.parse(doc["created_on"])
             self.updated_on = dateutil.parser.parse(doc["updated_on"])
             return
 
         self.fruit_id = kwargs["fruit_id"]
-        self.fruit = kwargs["fruit"]
+        self.color = kwargs["color"]
         utc_now = type(self)._utc_now()
         self.created_on = utc_now
         self.updated_on = utc_now
@@ -33,24 +33,24 @@ class Fruit(Model):
         rv = Model.as_doc_for_store(self)
         rv["type"] = "fruit_v1.0"
         rv["fruit_id"] = self.fruit_id
-        rv["fruit"] = self.fruit
+        rv["color"] = self.color
         rv["created_on"] = self.created_on.isoformat()
         rv["updated_on"] = self.updated_on.isoformat()
         return rv
 
-    def change_fruit(self, fruit):
-        self.fruit = fruit
+    def change_color(self, color):
+        self.color = color
         self.updated_on = type(self)._utc_now()
 
     @classmethod
-    def get_random_fruit(cls, but_not_this_fruit=None):
-        fruits = ["apple", "pear", "fig", "orange", "kiwi"]
+    def get_random_color(cls, but_not_this_color=None):
+        colors = ["red", "orange", "blue", "brown", "yellow", "pink", "white", "black"]
         while True:
-            fruit = random.choice(fruits)
-            if but_not_this_fruit is None:
-                return fruit
-            if but_not_this_fruit != fruit:
-                return fruit
+            color = random.choice(colors)
+            if but_not_this_color is None:
+                return color
+            if but_not_this_color != color:
+                return color
 
     @classmethod
     def _utc_now(cls):

@@ -1,0 +1,8 @@
+{
+    "language": "javascript",
+    "views": {
+        "fruit_by_color": {
+            "map": "function(doc) { if (doc.type.match(/^fruit_v\\d+.\\d+/i)) { emit(doc.color, null) } }"
+        }
+    }
+}

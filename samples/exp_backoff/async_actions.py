@@ -50,8 +50,10 @@ class AsyncAction(object):
 
 class AsyncFruitCreator(AsyncAction):
 
-    def __init__(self, async_state=None):
+    def __init__(self, color, async_state=None):
         AsyncAction.__init__(self, async_state)
+
+        self.fruit = Fruit(fruit_id=uuid.uuid4().hex, color=color)
 
         self._callback = None
 
@@ -59,9 +61,7 @@ class AsyncFruitCreator(AsyncAction):
         assert self._callback is None
         self._callback = callback
 
-        fruit = Fruit(fruit_id=uuid.uuid4().hex, fruit=Fruit.get_random_fruit())
-
-        ap = AsyncFruitPersister(fruit)
+        ap = AsyncFruitPersister(self.fruit)
         ap.persist(self._on_persist_done)
 
     def _on_persist_done(self, is_ok, is_conflict, ap):
@@ -71,6 +71,8 @@ class AsyncFruitCreator(AsyncAction):
             self._call_callback(False)
             return
 
+        # note use of 'ap.model' instead of 'self.fruit' since
+        # 'ap.model' will have ids and revision #s populated
         self._call_callback(True, ap.model)
 
     def _call_callback(self, is_ok, fruit=None):
@@ -81,10 +83,11 @@ class AsyncFruitCreator(AsyncAction):
 
 class AsyncFruitUpdater(AsyncAction):
 
-    def __init__(self, fruit_id, async_state=None):
+    def __init__(self, fruit_id, color, async_state=None):
         AsyncAction.__init__(self, async_state)
 
         self.fruit_id = fruit_id
+        self.color = color
 
         self._rs = ExponentialBackoffRetryStrategy()
         self._callback = None
@@ -105,11 +108,7 @@ class AsyncFruitUpdater(AsyncAction):
             self._call_callback(True)
             return
 
-        new_fruit = afr.async_state
-        if not new_fruit:
-            new_fruit = Fruit.get_random_fruit()
-
-        fruit.change_fruit(new_fruit)
+        fruit.change_color(self.color)
 
         afp = AsyncFruitPersister(fruit)
         afp.persist(self._on_persist_done)
@@ -119,32 +118,31 @@ class AsyncFruitUpdater(AsyncAction):
             if is_conflict:
                 _logger.info(
                     "Conflict detected updating fruit '%s' - waiting for a bit",
-                    afp.model.fruit_id)
-                self._rs.wait(
-                    self._on_rs_wait_done,
-                    afp.model.fruit_id,
-                    afp.model.fruit)
+                    self.fruit_id)
+                self._rs.wait(self._on_rs_wait_done)
                 return
 
             self._call_callback(False)
             return
 
+        # note use of 'ap.model' instead of 'self.fruit' since
+        # 'ap.model' will have ids and revision #s populated
         self._call_callback(True, afp.model)
 
-    def _on_rs_wait_done(self, waited_in_ms, fruit_id, new_fruit):
+    def _on_rs_wait_done(self, waited_in_ms):
         if not waited_in_ms:
             _logger.error(
                 "Conflict detected updating fruit '%s' - bailing because too many retries",
-                fruit_id)
+                self.fruit_id)
             self._call_callback(False)
             return
 
         _logger.info(
             "Conflict detected updating fruit '%s' - retrying update after waiting %d ms",
-            fruit_id,
+            self.fruit_id,
             waited_in_ms)
 
-        afr = AsyncFruitRetriever(fruit_id, new_fruit)
+        afr = AsyncFruitRetriever(self.fruit_id)
         afr.fetch(self._on_fetch_done)
 
     def _call_callback(self, is_ok, fruit=None):

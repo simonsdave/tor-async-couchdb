@@ -46,7 +46,7 @@ strategy must be identified
 | Attribute | Type | Mutable | Conflict Resolution Strategy | Comments |
 |:---------:|:----:|:-------:|:----------------------------:|:--------:|
 | type | string | no | N/A | always = "fruit_v1.0" |
-| fruit | string | yes | latest by updated_on timestamp | |
+| color | string | yes | latest by updated_on timestamp | |
 | created_on | string (timestamp) | no | N/A | |
 | updated_on | string (timestamp) | yes | latest | |
 
@@ -55,7 +55,7 @@ strategy must be identified
 ## fruit_by_fruit_id
 
 ```bash
-(env)>curl -s 'http://127.0.0.1:5984/tor_async_couchdb_sample/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?include_docs=true' | python -m json.tool
+(env)>curl -s 'http://127.0.0.1:5984/tor_async_couchdb_sample/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?include_docs=true' | jq .
 {
     "offset": 0,
     "rows": [
@@ -64,7 +64,7 @@ strategy must be identified
                 "_id": "053003c8a02820f0b1468add4f14d602",
                 "_rev": "1-ecf6cb723837bcc689623d9ec48953ce",
                 "created_on": "2015-06-17T19:54:02.133017+00:00",
-                "fruit": "apple",
+                "color": "red",
                 "fruit_id": "e370582d3894489192a679533e4f01ef",
                 "type": "fruit_v1.0",
                 "updated_on": "2015-06-17T19:54:02.133017+00:00"
@@ -78,10 +78,10 @@ strategy must be identified
 }
 ```
 
-## fruit_by_fruit
+## fruit_by_color
 
 ```bash
->curl -s 'http://127.0.0.1:5984/tor_async_couchdb_sample/_design/fruit_by_fruit/_view/fruit_by_fruit?include_docs=true' | python -m json.tool
+>curl -s 'http://127.0.0.1:5984/tor_async_couchdb_sample/_design/fruit_by_color/_view/fruit_by_color?include_docs=true' | jq .
 {
     "offset": 0,
     "rows": [
@@ -90,13 +90,13 @@ strategy must be identified
                 "_id": "053003c8a02820f0b1468add4f14d602",
                 "_rev": "1-ecf6cb723837bcc689623d9ec48953ce",
                 "created_on": "2015-06-17T19:54:02.133017+00:00",
-                "fruit": "apple",
+                "color": "red",
                 "fruit_id": "e370582d3894489192a679533e4f01ef",
                 "type": "fruit_v1.0",
                 "updated_on": "2015-06-17T19:54:02.133017+00:00"
             },
             "id": "053003c8a02820f0b1468add4f14d602",
-            "key": "apple",
+            "key": "red",
             "value": null
         }
     ],

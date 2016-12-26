@@ -9,9 +9,9 @@ import requests
 _host = "http://127.0.0.1:8445"
 _verify_cert = False
 _timeout = 30.0
-_number_fruits = 25
-_weight_get = 100
-_weight_put = 0
+_number_fruits = 5
+_weight_get = 50
+_weight_put = 50
 
 if not _verify_cert:
     requests.packages.urllib3.disable_warnings()

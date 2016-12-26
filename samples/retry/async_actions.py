@@ -49,8 +49,10 @@ class AsyncAction(object):
 
 class AsyncFruitCreator(AsyncAction):
 
-    def __init__(self, async_state=None):
+    def __init__(self, color, async_state=None):
         AsyncAction.__init__(self, async_state)
+
+        self.fruit = Fruit(fruit_id=uuid.uuid4().hex, color=color)
 
         self._callback = None
 
@@ -58,9 +60,7 @@ class AsyncFruitCreator(AsyncAction):
         assert self._callback is None
         self._callback = callback
 
-        fruit = Fruit(fruit_id=uuid.uuid4().hex, fruit=Fruit.get_random_fruit())
-
-        ap = AsyncFruitPersister(fruit)
+        ap = AsyncFruitPersister(self.fruit)
         ap.persist(self._on_persist_done)
 
     def _on_persist_done(self, is_ok, is_conflict, ap):
@@ -70,6 +70,8 @@ class AsyncFruitCreator(AsyncAction):
             self._call_callback(False)
             return
 
+        # note use of 'ap.model' instead of 'self.fruit' since
+        # 'ap.model' will have ids and revision #s populated
         self._call_callback(True, ap.model)
 
     def _call_callback(self, is_ok, fruit=None):
@@ -80,10 +82,11 @@ class AsyncFruitCreator(AsyncAction):
 
 class AsyncFruitUpdater(AsyncAction):
 
-    def __init__(self, fruit_id, async_state=None):
+    def __init__(self, fruit_id, color, async_state=None):
         AsyncAction.__init__(self, async_state)
 
         self.fruit_id = fruit_id
+        self.color = color
 
         self._callback = None
 
@@ -103,11 +106,7 @@ class AsyncFruitUpdater(AsyncAction):
             self._call_callback(True)
             return
 
-        new_fruit = afr.async_state
-        if not new_fruit:
-            new_fruit = Fruit.get_random_fruit()
-
-        fruit.change_fruit(new_fruit)
+        fruit.change_color(self.color)
 
         afp = AsyncFruitPersister(fruit)
         afp.persist(self._on_persist_done)
@@ -115,9 +114,7 @@ class AsyncFruitUpdater(AsyncAction):
     def _on_persist_done(self, is_ok, is_conflict, afp):
         if not is_ok:
             if is_conflict:
-                afr = AsyncFruitRetriever(
-                    afp.model.fruit_id,
-                    afp.model.fruit)
+                afr = AsyncFruitRetriever(self.fruit_id)
                 afr.fetch(self._on_fetch_done)
                 return
 

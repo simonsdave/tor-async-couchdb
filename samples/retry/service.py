@@ -18,6 +18,7 @@ from async_actions import AsyncFruitRetriever
 from async_actions import AsyncFruitCreator
 from async_actions import AsyncFruitDeleter
 from async_actions import AsyncFruitUpdater
+from models import Fruit
 
 _logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class RequestHandler(tornado.web.RequestHandler):
             "_id": fruit._id,
             "_rev": fruit._rev,
             "fruit_id": fruit.fruit_id,
-            "fruit": fruit.fruit,
+            "color": fruit.color,
             "created_on": fruit.created_on.isoformat(),
             "updated_on": fruit.updated_on.isoformat(),
         }
@@ -41,7 +42,7 @@ class MultipleResourcesRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def post(self):
-        afc = AsyncFruitCreator()
+        afc = AsyncFruitCreator(Fruit.get_random_color())
         afc.create(self._post_on_create_done)
 
     def _post_on_create_done(self, is_ok, fruit, afc):
@@ -96,7 +97,7 @@ class SingleResourceRequestHandler(RequestHandler):
 
     @tornado.web.asynchronous
     def put(self, fruit_id):
-        afu = AsyncFruitUpdater(fruit_id)
+        afu = AsyncFruitUpdater(fruit_id, Fruit.get_random_color())
         afu.update(self._put_on_update_done)
 
     def _put_on_update_done(self, is_ok, fruit, afu):
