@@ -14,7 +14,6 @@ import logging
 import optparse
 import os
 import requests
-import sys
 
 from keyczar import keyczar
 
@@ -334,7 +333,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
         clo.verify_host_ssl_cert)
     if not is_ok:
         _logger.fatal("CouchDB isn't running on '%s'", clo.host)
-        sys.exit(1)
+        return 1
 
     if clo.delete:
         is_ok = _delete_database(
@@ -343,7 +342,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
             session,
             clo.verify_host_ssl_cert)
         if not is_ok:
-            sys.exit(1)
+            return 1
 
     if clo.create:
         is_ok = _create_database(
@@ -352,7 +351,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
             session,
             clo.verify_host_ssl_cert)
         if not is_ok:
-            sys.exit(1)
+            return 1
 
     if clo.create and clo.create_design_docs and design_docs_module is not None:
         is_ok = _create_design_docs(
@@ -362,7 +361,7 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
             clo.verify_host_ssl_cert,
             design_docs_module)
         if not is_ok:
-            sys.exit(1)
+            return 1
 
     if clo.create and clo.create_seed_docs and seeds_docs_module is not None:
         is_ok = _create_seed_docs(
@@ -373,6 +372,6 @@ def main(clp, design_docs_module=None, seeds_docs_module=None):
             seeds_docs_module,
             clo.seed_doc_signer_dir_name)
         if not is_ok:
-            sys.exit(1)
+            return 1
 
-    sys.exit(0)
+    return 0
