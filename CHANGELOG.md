@@ -3,6 +3,21 @@ All notable changes to this project will be documented in this file.
 Format of this file follows [these](http://keepachangelog.com/) guidelines.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.50.0] - [2017-01-08]
+
+### Added
+- a Vagrant provisioned development environment
+- .travis.yml builds python source distribution
+
+### Changed
+- refine & simplify samples given the samples form the primary project documenation
+- python-dateutil 2.4.2 -> 2.6.0
+- tornado 4.4.1 -> 4.4
+- locustio 0.7.3 -> 0.7.5
+- python-keyczar 0.715 -> 0.716
+- mock 1.3.0 -> 2.0.0
+- flake8 2.5.1 -> 2.5.3
+
 ## [0.40.0] - [2016-01-13]
 
 ### Changed
