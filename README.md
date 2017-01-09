@@ -6,15 +6,15 @@
 [![Build Status](https://travis-ci.org/simonsdave/tor-async-couchdb.svg)](https://travis-ci.org/simonsdave/tor-async-couchdb)
 [![Coverage Status](https://coveralls.io/repos/simonsdave/tor-async-couchdb/badge.svg)](https://coveralls.io/r/simonsdave/tor-async-couchdb)
 
-```tor-async-couchdb``` is a [Tornado](http://www.tornadoweb.org/en/stable/)
+```tor-async-couchdb``` is an opinionated [Tornado](http://www.tornadoweb.org/en/stable/)
 [async](http://tornado.readthedocs.org/en/latest/guide/async.html) client
 for [CouchDB](http://couchdb.apache.org/).
 ```tor-async-couchdb``` is intended to operate as part of a service's application
 tier and interact with the service's data tier implemented
 using [CouchDB](http://couchdb.apache.org/).
 
-```tor-async-couchdb``` documentation isn't as strong as it could be. This
-README.md, samples and tests are best way to gain an understanding of how to
+```tor-async-couchdb``` documentation isn't as strong as it could be.
+sample services are best way to gain an understanding of how to
 use ```tor-async-couchdb```.
 
 ```tor-async-couchdb``` was originally created for use with
@@ -22,47 +22,36 @@ use ```tor-async-couchdb```.
 has also been used with [Cloudant DBaaS](https://cloudant.com/product/)
 and [Cloudant Local](https://cloudant.com/cloudant-local/).
 
-```tor-async-couchdb``` was created as a way to capture the best practices
-learned after operating and scaling a number of services that used CouchDB
-and Tornado. The bullets below summarize these best practices.
+```tor-async-couchdb``` was created as a way to capture a very opinionated set of best practices
+and learnings after operating and scaling a number of services that used CouchDB
+and Tornado. The bullets below summarize the opinions.
 
 * services should embrace eventual consistency
 * thoughts on data models:
-  * every document should have a versioned type property (ex *type=v9.99*)
-  * documents are chunky; retrieval of a single document is often all
-  that's necessary to implement a RESTful service's endpoint
-  ala standard NoSQL data model thinking
-  * assume conflicts happen as part of regular operation
-  * sensitive data at rest is
-  an information security concern;
-  each property should be evaluated against a data and information
-  classification policy; if a property is deemed sensitive it should, ideally,
-  be hashed ([bcrypt]([py-bcrypt](https://pypi.python.org/pypi/py-bcrypt/) preferred
-  and if not [SHA3-512](http://en.wikipedia.org/wiki/SHA-3));
-  if a sensitive property can't be hashed it should be encrypted using
-  [Keyczar](http://www.keyczar.org/) - [this](http://www.cmu.edu/iso/governance/guidelines/data-classification.html)
-  is a good example of data classification
-* CouchDB, not the service tier, should generate document IDs
+    * every document should have a versioned type property (ex *type=v9.99*)
+    * documents are chunky aka retrieval of a single document should typically be all
+    that's necessary to implement a RESTful service's endpoint
+    ala standard NoSQL data model thinking
+    * assume conflicts happen as part of regular operation
+    * sensitive data at rest is an information security concern that must be addressed
+        * each property should be evaluated against a data and information classification policy
+        * [this](http://www.cmu.edu/iso/governance/guidelines/data-classification.html) is a good example of data classification policy
+        * if a property is deemed sensitive it should ideally be hashed using [bcrypt](https://pypi.python.org/pypi/py-bcrypt/) if possible
+        and otherwise [SHA3-512](http://en.wikipedia.org/wiki/SHA-3)
+        * if a sensitive proprerty can't be hashed it should be encrypted using [Keyczar](http://www.keyczar.org/)
+* direct tampering of data in the database is undesirable and therefore tamper resistance is both valued and a necessity
+* to prevent unncessary fragmentation, CouchDB, not the service tier, should generate document IDs
 * document retrieval should be done through views against document properties not document IDs
 * one design document per view
-* horizontally scaling CouchDB should be done using infrastructure (CouchDB 2.0 and Cloudant)
+* horizontally scaling CouchDB should be done using infrastructure (CouchDB 2.0 or Cloudant)
 not application level sharding
-* direct tampering of data in the database by DBAs is undesirable and therefore
-tamper resistance is valued
 
 # Using
 
-Add the following to your project's ```setup.py```:
+Install ```tor-async-couchdb```.
 
-```python
-from setuptools import setup
-setup(
-    install_requires=[
-        "tor-async-couchdb==0.30.0",
-    ],
-    dependency_links=[
-        "https://github.com/simonsdave/tor-async-couchdb/tarball/v0.30.0#egg=tor-async-couchdb-0.30.0",
-    ],
+```bash
+>pip install tor_async_couchdb
 ```
 
 Configure ```tor-async-couchdb``` in your service's mainline.
