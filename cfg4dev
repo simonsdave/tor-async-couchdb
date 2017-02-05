@@ -11,8 +11,6 @@ configure_dev_env()
         virtualenv env
         source "$PWD/env/bin/activate"
 
-        pip install pip==1.5.6
-
         pip install --requirement "$PWD/requirements.txt"
 
         OSNAME=$(uname -s)
