@@ -3,11 +3,12 @@ All notable changes to this project will be documented in this file.
 Format of this file follows [these](http://keepachangelog.com/) guidelines.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
-## [0.50.0] - [2017-01-08]
+## [0.50.1] - [2017-02-12]
 
-### Added
-- a Vagrant provisioned development environment
-- .travis.yml builds python source distribution
+### Changed
+- fixed silly instal bug introduced in 0.50.0
+
+## [0.50.0] - [2017-01-08]
 
 ### Changed
 - refine & simplify samples given the samples form the primary project documenation
