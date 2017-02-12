@@ -19,7 +19,6 @@
 #
 #   >pip install -i https://testpypi.python.org/pypi tor_async_couchdb
 #
-import os.path
 import re
 import sys
 from setuptools import setup
@@ -51,28 +50,17 @@ if not version:
 _download_url = "https://github.com/simonsdave/tor-async-couchdb/tarball/v%s" % version
 
 
-def _is_register_package():
+def _long_description():
     """Assuming the following command is used to register the package
-
         python setup.py register -r pypitest
-
     then sys.argv should be
-
         ['setup.py', 'register', '-r', 'pypitest']
     """
-    if len(sys.argv) < 2:
-        return False
-    return sys.argv[1] == 'register'
+    if 2 <= len(sys.argv) and sys.argv[1] == 'register':
+        with open('README.rst', 'r') as f:
+            return f.read()
 
-
-def _long_description_filename():
-    readme_rst = 'README.rst'
-    return readme_rst if _is_register_package() or os.path.exists(readme_rst) else 'README.md'
-
-
-def _long_description():
-    with open(_long_description_filename(), 'r') as f:
-        return f.read()
+    return 'a long description'
 
 
 # list of valid classifiers @ https://pypi.python.org/pypi?%3Aaction=list_classifiers
