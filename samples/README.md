@@ -10,6 +10,11 @@ Before running any of the samples you'll need to install
 some pre-reqs.
 
 ```bash
+>pip install -r requirements.txt
+.
+.
+.
+>
 ```
 
 In terms of the structure of the samples.
