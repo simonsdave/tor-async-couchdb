@@ -7,6 +7,8 @@ import httplib
 import logging
 import optparse
 import re
+import signal
+import sys
 import time
 
 import tornado.httpserver
@@ -126,6 +128,12 @@ class CommandLineParser(optparse.OptionParser):
             help=help)
 
 
+def _sigint_handler(signal_number, frame):
+    assert signal_number == signal.SIGINT
+    _logger.info("Shutting down ...")
+    sys.exit(0)
+
+
 if __name__ == "__main__":
     clp = CommandLineParser()
     (clo, cla) = clp.parse_args()
@@ -137,6 +145,8 @@ if __name__ == "__main__":
         format="%(asctime)s.%(msecs)03d+00:00 %(levelname)s %(module)s %(message)s")
 
     async_model_actions.database = clo.database
+
+    signal.signal(signal.SIGINT, _sigint_handler)
 
     handlers = [
         (
