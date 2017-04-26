@@ -120,7 +120,7 @@ Start another while loop that repeats a ```/_health?quick=false```
 Start a while loop which endlessly creates and deletes the sample database
 
 ```bash
->>while true; do ./installer.py --log=error --delete=true --create=false; sleep 5; ./installer.py --log=error --delete=false --create=true; sleep 5; done
+>while true; do ./installer.py --log=error --delete=true --create=false; sleep 5; ./installer.py --log=error --delete=false --create=true; sleep 5; done
 ```
 
 What you'll see is that our ```/_health?quick=true``` loop keeps coming
