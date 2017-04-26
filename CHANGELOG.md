@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - ...
 
 ### Changed
-- ...
+- tornado 4.4 -> 4.5.1
 
 ### Removed
 - ...
@@ -17,7 +17,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [0.50.1] - [2017-02-12]
 
 ### Changed
-- fixed silly instal bug introduced in 0.50.0
+- fixed silly install bug introduced in 0.50.0
 
 ## [0.50.0] - [2017-01-08]
 
