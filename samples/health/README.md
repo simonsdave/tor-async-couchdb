@@ -72,7 +72,7 @@ Now let's add the quick query string parameter to the GET request.
   "status": "green",
   "links": {
     "self": {
-      "href": "http://127.0.0.1:8445/v1.0/_health"
+      "href": "http://127.0.0.1:8445/v1.0/_health?quick=false"
     }
   }
 }

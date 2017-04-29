@@ -51,10 +51,11 @@ class HealthRequestHandler(tornado.web.RequestHandler):
         self._write_response(is_ok)
 
     def _write_response(self, is_ok):
-        location = "%s://%s%s" % (
+        location = "%s://%s%s%s" % (
             self.request.protocol,
             self.request.host,
             self.request.path,
+            "?%s" % self.request.query if self.request.query else '',
         )
 
         body = {
