@@ -49,7 +49,7 @@ Issue a GET to the ```/_metrics``` endpoint to get a sense the response.
     "dataSize": 1265,
     "diskSize": 4197,
     "views": {
-      "fruit_by_fruit": {
+      "fruit_by_color": {
         "fragmentation": 100,
         "dataSize": 0,
         "diskSize": 51
