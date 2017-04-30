@@ -78,15 +78,9 @@ to create a CouchDB database installer. The database created by
 the installer is used for each of the ```tor-async-couchdb```
 samples.
 
-## [tests.py](tests.py)
-Once you have spun up one of the sample services you can run
-a sanity test suite against the service using a
-[nose](https://nose.readthedocs.org/en/latest/) runnable
-integration test suite in [tests.py](tests.py).
-The test suite is hard-coded to talk to a service at
-[http://127.0.0.1:8445](http://127.0.0.1:8445) so edit
-the test if you are running the service at a different
-endpoint.
+## [test_all_samples.sh](test_all_samples.sh)
+This shell script runs each sample service through a simple set
+of sanity tests.
 
 ```bash
 >nosetests tests.py
