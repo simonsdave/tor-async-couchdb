@@ -11,7 +11,7 @@ set -e
 
 run_crud_sample() {
     pushd "$SCRIPT_DIR_NAME" >& /dev/null
-    SAMPLE_DIR=$1
+    SAMPLE_DIR=crud/$1
     echo "running tests for sample \"$SAMPLE_DIR\""
     "./db_installer/installer.py" --delete=true --create=true
     SERVICE_DOT_PY=./$SAMPLE_DIR/service.py
@@ -22,7 +22,7 @@ run_crud_sample() {
         echo "error starting \"$SERVICE_DOT_PY\"" >&2
         exit 1
     fi
-    nosetests
+    nosetests crud
     kill -INT $SERVICE_PID
     rm "$SERVICE_OUTPUT"
     "./db_installer/installer.py" --delete=true --create=true

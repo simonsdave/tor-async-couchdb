@@ -1,9 +1,9 @@
 # Samples
 The samples below demonstrate how to use the capabilities
 of ```tor-async-couchdb```.
-The first sample ([basic](basic)) is very simple and uses only the fundamental
+The first sample ([basic](crud/basic)) is very simple and uses only the fundamental
 features of ```tor-async-couchdb```. Subsequent samples build on
-[basic](basic) exercising increasingly more advanced features
+[basic](crud/basic) exercising increasingly more advanced features
 of ```tor-async-couchdb```.
 
 Before running any of the samples you'll need to install
@@ -26,23 +26,23 @@ style of paradigm.
 	* service.py contains all Tornado request handlers and the service's mainline - request handlers
 	  create instances of async actions to async'ly operate on models (DCI's *context*)
 
-## [basic](basic)
+## [basic](crud/basic)
 This service implements a simple RESTful service that
 demonstrates how the foundational features of ```tor-async-couchdb```
 are intended to be used.
 
-## [retry](retry)
+## [retry](crud/retry)
 This service implements a simple RESTful service that
-builds on the [basic](basic) sample.
+builds on the [basic](crud/basic) sample.
 Specifically, this sample illustrates how
 to implement on-write retry logic that works with CouchDB's
 Multi-Version Concurrency Control (MVCC) approach to conflicts.
 
-## [exponential backoff](exp_backoff)
+## [exponential backoff](crud/exp_backoff)
 This service implements a simple RESTful service that
-builds on the [retry](retry) sample.
+builds on the [retry](crud/retry) sample.
 Specifically, this sample illustrates how
-to refine [retry](retry)'s retry logic using
+to refine [retry](crud/retry)'s retry logic using
 and an exponential backoff strategy.
 
 ## multi-master
