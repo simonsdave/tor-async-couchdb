@@ -1,4 +1,4 @@
-#Exponential Backoff Strategy Sample
+# Exponential Backoff Strategy Sample
 This service implements a simple RESTful service that
 builds on the [retry sample](../retry).
 Specifically, this sample illustrates how
