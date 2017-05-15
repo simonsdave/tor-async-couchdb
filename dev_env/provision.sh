@@ -49,16 +49,22 @@ apt-get install -y pandoc
 
 timedatectl set-timezone EST
 
-# install couchdb as per https://launchpad.net/~couchdb/+archive/ubuntu/stable
-# there are some other instructions @ https://cwiki.apache.org/confluence/display/COUCHDB/Ubuntu
-apt-get --no-install-recommends -y install build-essential pkg-config erlang libicu-dev libmozjs185-dev
-apt-get install software-properties-common -y
-add-apt-repository ppa:couchdb/stable -y
-apt-get update -y
-apt-get install -V -y couchdb
-cp /vagrant/local.ini /etc/couchdb/local.ini
-chown couchdb:couchdb /etc/couchdb/local.ini
-service couchdb restart
+#
+# couchdb is run out of docker containers to
+#
+#   1/ simplify dev env provisioning
+#   2/ permit easy switching between 1.6 and 2.0
+#
+# reference
+#
+#   https://github.com/apache/couchdb-docker
+#
+
+# docker 2.0
+docker pull klaemo/couchdb:latest
+
+# docker 1.6.1
+docker pull couchdb:latest
 
 #
 # jq is just so generally useful
