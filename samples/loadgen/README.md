@@ -3,9 +3,10 @@ A [locust](http://locust.io/) based utility which drives CRUD style
 load through the sample services to demonstrate ```tor-async-couchdb```'s
 conflict resolution logic.
 
-[loadgen.sh](loadgen.sh) starts [locust](http://locust.io/) to drive
+[loadgen.sh](loadgen.sh) starts [k6](https://k6.io) to drive
 requests to a sample service which is assumed to be runing on
-[http://127.0.0.1:8445](http://127.0.0.1:8445). When [locustfile.py](locustfile.py)
+[http://127.0.0.1:8445](http://127.0.0.1:8445).
+When [locustfile.py](locustfile.py)
 is loaded by [locust](http://locust.io/) it first issues a number
 of ```POST``` requests to create a collection of fruit resources which are then
 the target of ```GET``` and ```PUT``` requests.

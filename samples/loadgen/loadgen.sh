@@ -4,23 +4,32 @@
 # this shell script is used to run the load generator
 #
 # exit codes
+#
 #   0   always
 #
 
+set -e
+set -x
+
 SCRIPT_DIR_NAME="$( cd "$( dirname "$0" )" && pwd )"
 
-LOG_FILE_NAME=$(python -c "import os; f, _ = os.path.splitext(os.path.basename(\"$0\")); print f")
-LOG_FILE_NAME="$SCRIPT_DIR_NAME/$LOG_FILE_NAME.tsv"
+TEMP_DIR=$(mktemp -d 2> /dev/null || mktemp -d -t DAS)
+"$PWD/create_fruit.py" > "$TEMP_DIR/fruit_ids.js"
 
-rm "$LOG_FILE_NAME" >& /dev/null
+docker pull loadimpact/k6
 
-locust \
-    --loglevel=INFO \
-    --locustfile="$SCRIPT_DIR_NAME/locustfile.py" \
-    --no-web \
-    --num-request=1000 \
-    --clients=25 \
-    --hatch-rate=5 \
-    --logfile="$LOG_FILE_NAME"
+DOCKER0IP=$(ifconfig docker0 | grep 'inet addr:' | sed -e 's/.*addr://g' | sed -e 's/ .*$//g')
+
+docker \
+    run \
+    -v "$PWD":/k6output \
+    -v "$TEMP_DIR":/k6imports \
+    -e SERVICE_IP=$DOCKER0IP \
+    -e SERVICE_PORT=8445 \
+    -e PERCENT_GET=50 \
+    -e PERCENT_PUT=50 \
+    -i \
+    loadimpact/k6 run --out json=/k6output/foo.json - <k6script.js
+set +x
 
 exit 0

@@ -1,4 +1,2 @@
 python-dateutil==2.6.0
-locustio==0.7.5
-pyzmq>=15.1.0
 pycurl>=7.19.5.1
