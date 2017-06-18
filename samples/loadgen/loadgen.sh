@@ -60,6 +60,11 @@ if [ $# != 0 ]; then
     exit 1
 fi
 
+if [ $(($PERCENT_GET + $PERCENT_PUT)) != 100 ]; then
+    echo "operation percentages must total to 100" >&2
+    exit 1
+fi
+
 #
 # initialize the database with a bunch of fruit
 #
