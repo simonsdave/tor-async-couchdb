@@ -69,7 +69,7 @@ fi
 # initialize the database with a bunch of fruit
 #
 TEMP_DIR=$(mktemp -d 2> /dev/null || mktemp -d -t DAS)
-"$PWD/create_fruit.py" > "$TEMP_DIR/fruit_ids.js"
+"$SCRIPT_DIR_NAME/create_fruit.py" > "$TEMP_DIR/fruit_ids.js"
 
 #
 # always use latest version of k6
@@ -94,6 +94,6 @@ docker \
     -e PERCENT_GET=$PERCENT_GET \
     -e PERCENT_PUT=$PERCENT_PUT \
     -i \
-    loadimpact/k6 run --out json=/k6output/foo.json - <k6script.js
+    loadimpact/k6 run --out json=/k6output/foo.json - < "$SCRIPT_DIR_NAME/k6script.js"
 
 exit 0
