@@ -7,8 +7,6 @@
 
 SCRIPT_DIR_NAME="$( cd "$( dirname "$0" )" && pwd )"
 
-set -e
-
 run_crud_sample() {
     pushd "$SCRIPT_DIR_NAME" >& /dev/null
     SAMPLE_DIR=crud/$1
@@ -18,11 +16,15 @@ run_crud_sample() {
     SERVICE_OUTPUT=$(mktemp)
     "$SERVICE_DOT_PY" >& "$SERVICE_OUTPUT" &
     SERVICE_PID=$!
-    if [ "$SERVICE_PID" == "" ]; then
-        echo "error starting \"$SERVICE_DOT_PY\"" >&2
+    sleep 1
+    ps --pid $SERVICE_PID >& /dev/null
+    if [ $? -ne 0 ]; then
+        echo "error starting \"$SERVICE_DOT_PY\". pre-req's installed?" >&2
         exit 1
     fi
+
     nosetests crud
+
     kill -INT $SERVICE_PID
     rm "$SERVICE_OUTPUT"
     "./db_installer/installer.py" --delete=true --create=true
@@ -39,11 +41,15 @@ run_non_crud_sample() {
     SERVICE_OUTPUT=$(mktemp)
     "$SERVICE_DOT_PY" >& "$SERVICE_OUTPUT" &
     SERVICE_PID=$!
-    if [ "$SERVICE_PID" == "" ]; then
-        echo "error starting \"$SERVICE_DOT_PY\"" >&2
+    sleep 1
+    ps --pid $SERVICE_PID >& /dev/null
+    if [ $? -ne 0 ]; then
+        echo "error starting \"$SERVICE_DOT_PY\". pre-req's installed?" >&2
         exit 1
     fi
+
     nosetests $SAMPLE_DIR
+
     kill -INT $SERVICE_PID
     rm "$SERVICE_OUTPUT"
     echo "finished tests for sample \"$SAMPLE_DIR\""
