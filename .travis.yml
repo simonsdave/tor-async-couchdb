@@ -4,7 +4,7 @@ python:
 services:
   - couchdb
 install:
-  - curl http://127.0.0.1:5984
+  - until curl http://127.0.0.1:5984 >& /dev/null; do echo "waiting for couchdb to start" && sleep 1; done && curl http://127.0.0.1:5984
   - source cfg4dev
   - pip install coveralls
 script:
