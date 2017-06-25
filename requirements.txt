@@ -23,4 +23,3 @@ tornado==4.5.1
 twine==1.9.1
 pep8==1.7.0
 pudb>=2015.4.1
-pypandoc==1.4
