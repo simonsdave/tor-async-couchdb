@@ -29,7 +29,7 @@ run_sample() {
 
     kill -INT $SERVICE_PID
     rm "$SERVICE_OUTPUT"
-    "./db_installer/installer.py" --delete=true --create=true
+    "./db_installer/installer.py" --delete=true --create=false
     echo "finished tests for sample \"$SAMPLE_DIR\""
     popd >& /dev/null
 }
