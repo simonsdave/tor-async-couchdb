@@ -1,33 +1,30 @@
-#loadgen
-A [locust](http://locust.io/) based utility which drives CRUD style
-load through the sample services to demonstrate ```tor-async-couchdb```'s
+# loadgen
+
+A [k6](https://k6.io) based utility which drives CRUD style
+load through the sample services demonstrating ```tor-async-couchdb```'s
 conflict resolution logic.
 
-[loadgen.sh](loadgen.sh) starts [k6](https://k6.io) to drive
-requests to a sample service which is assumed to be runing on
-[http://127.0.0.1:8445](http://127.0.0.1:8445).
-When [locustfile.py](locustfile.py)
-is loaded by [locust](http://locust.io/) it first issues a number
-of ```POST``` requests to create a collection of fruit resources which are then
-the target of ```GET``` and ```PUT``` requests.
+[loadgen.sh](loadgen.sh):
 
-There are a few parameters
-which can be tweaked to control the shape and intensity of the generated traffic.
+* assumes a sample service is listening on ```http://127.0.0.1:8445```
+* runs [create_fruit.py](create_fruit.py) to create a bunch of fruit
+* starts [k6](https://k6.io) to drive requests through the sample service
 
-* total number of requests and number of concurrent requests
-are configured in [loadgen.sh](loadgen.sh) - look for the
-```--num-request``` and ```--clients``` [locust](http://locust.io/)
-command line args
-* the relative number of ```GET``` and ```PUT``` requests is controlled
-by the ```_weight_get``` and ```_weight_put``` variables in
-[locustfile.py](locustfile.py)
-* the number of fruits (model instances) initial created is defined
-by ```_number_fruits``` in [locustfile.py](locustfile.py)
+```bash
+> ./loadgen.sh --help
+usage: loadgen.sh [OPTION...]
 
-Note - this should be obvious but in case not ...
-the loadgen utility is designed to exercise ```tor-async-couchdb```'s
-conflict resolution logic which is trigged when multiple requests attempt to
-do things to the same resource.
-The probability of a conflict being generated increases both as the number
+  -h, --help                          this message
+  -v                                  verbose output
+  -nf, --number-fruit [NUMBER FRUIT]  number fruit (50 = default)
+  -pg, --percent-get [PERCENT]        % get requests (100% = default)
+  -pp, --percent-put [PERCENT]        % put requests (0% = default)
+>
+```
+
+When selecting [loadgen.sh](loadgen.sh) is designed to exercise ```tor-async-couchdb```'s
+conflict resolution logic which is trigged when multiple requests simultaneously
+attempt to do things to the same resource.
+The probability of a conflict being triggered increases both as the number
 of concurrent requests increases, the percentage of ```PUT``` requests increases
 and the number of resources decreases.
