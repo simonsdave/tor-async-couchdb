@@ -22,14 +22,14 @@ export let options = {
   duration: "5s"
 };
 
-let baseurl = `http://${__ENV.SERVICE_IP}:${__ENV.SERVICE_PORT}/v1.0/fruits/`;
+let service_base_url = `${__ENV.SERVICE}/v1.0/fruits/`;
 
 function getRandomFruitID() {
   return fruit_ids[Math.floor(Math.random() * fruit_ids.length)];
 }
 
 function httpGet() {
-  let url = baseurl + getRandomFruitID();
+  let url = service_base_url + getRandomFruitID();
   let res = http.get(url);
   check(res, {
     "get status was 200": (r) => r.status == 200,
@@ -38,7 +38,7 @@ function httpGet() {
 }
 
 function httpPut() {
-  let url = baseurl + getRandomFruitID();
+  let url = service_base_url + getRandomFruitID();
   let payload = {};
   let params = {
     headers: {

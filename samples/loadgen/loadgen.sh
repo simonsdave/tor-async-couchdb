@@ -10,19 +10,27 @@
 
 SCRIPT_DIR_NAME="$( cd "$( dirname "$0" )" && pwd )"
 
+#
+# k6 runs in a docker container and talks to the service
+# being tested on the docker0 bridge
+#
+SERVICE=http://$(ifconfig docker0 | grep 'inet addr:' | sed -e 's/.*addr://g' | sed -e 's/ .*$//g'):8445
+
 usage() {
     echo "usage: `basename $0` [OPTION...]"
     echo ""
-    echo "  -h, --help                      this message"
-    echo "  -v                              verbose output"
-    echo "  -pg, --percent-get [PERCENT]    % get requests"
-    echo "  -pp, --percent-put [PERCENT]    % put requests"
+    echo "  -h, --help                          this message"
+    echo "  -v                                  verbose output"
+    echo "  -nf, --number-fruit [NUMBER FRUIT]  number fruit (50 = default)"
+    echo "  -pg, --percent-get [PERCENT]        % get requests (100% = default)"
+    echo "  -pp, --percent-put [PERCENT]        % put requests (0% = default)"
 }
 
 #
 # parse command line arguments
 #
 VERBOSE=0
+NUMBER_FRUIT=50
 PERCENT_GET=100
 PERCENT_PUT=0
 
@@ -38,6 +46,11 @@ do
         -v)
             shift
             VERBOSE=1
+            ;;
+        -nf|--number-fruit)
+            shift
+            NUMBER_FRUIT=$1
+            shift
             ;;
         -pg|--percent-get)
             shift
@@ -69,18 +82,12 @@ fi
 # initialize the database with a bunch of fruit
 #
 TEMP_DIR=$(mktemp -d 2> /dev/null || mktemp -d -t DAS)
-"$SCRIPT_DIR_NAME/create_fruit.py" > "$TEMP_DIR/fruit_ids.js"
+"$SCRIPT_DIR_NAME/create_fruit.py" --number-fruit=$NUMBER_FRUIT --service=$SERVICE > "$TEMP_DIR/fruit_ids.js"
 
 #
 # always use latest version of k6
 #
 docker pull loadimpact/k6
-
-#
-# k6 runs in a docker container and talks to the service
-# being tested on the docker0 bridge
-#
-DOCKER0IP=$(ifconfig docker0 | grep 'inet addr:' | sed -e 's/.*addr://g' | sed -e 's/ .*$//g')
 
 #
 # finally we get to do run the load test
@@ -89,8 +96,7 @@ docker \
     run \
     -v "$PWD":/k6output \
     -v "$TEMP_DIR":/k6imports \
-    -e SERVICE_IP=$DOCKER0IP \
-    -e SERVICE_PORT=8445 \
+    -e SERVICE=$SERVICE \
     -e PERCENT_GET=$PERCENT_GET \
     -e PERCENT_PUT=$PERCENT_PUT \
     -i \
