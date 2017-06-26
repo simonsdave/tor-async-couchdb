@@ -9,3 +9,4 @@ coverage_report
 build
 dist
 tor_async_couchdb.egg-info
+README.rst
