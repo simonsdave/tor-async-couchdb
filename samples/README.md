@@ -17,10 +17,9 @@ some pre-reqs.
 >
 ```
 
-In terms of the structure of the samples.
-Each of the samples is structured in the same way and follows
-a [Data, context and interaction (DCI)](http://en.wikipedia.org/wiki/Data,_context_and_interaction)
-style of paradigm.
+Each of the samples is structured per
+the [Data, context and interaction (DCI)](http://en.wikipedia.org/wiki/Data,_context_and_interaction)
+paradigm.
 	* model.py contains model classes (DCI's *data*)
 	* async_action.py contains classes that implement async operations which operate on models (DCI's *interaction*)
 	* service.py contains all Tornado request handlers and the service's mainline - request handlers
@@ -93,6 +92,6 @@ OK
 ```
 
 ## [loadgen](loadgen)
-A [locust](http://locust.io/) based utility which drives CRUD style
-load through the sample services to demonstrate ```tor-async-couchdb```'s
+A [k6](https://k6.io) based utility which drives CRUD style
+load through the sample services demonstrating ```tor-async-couchdb```'s
 conflict resolution logic.
