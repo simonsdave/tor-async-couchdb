@@ -17,10 +17,6 @@ import http from "k6/http";
 import { check } from "k6";
 import { fruit_ids } from "/k6imports/fruit_ids.js";
 
-export let options = {
-  duration: "5s"
-};
-
 let service_base_url = `${__ENV.SERVICE}/v1.0/fruits/`;
 
 function getRandomFruitID() {
