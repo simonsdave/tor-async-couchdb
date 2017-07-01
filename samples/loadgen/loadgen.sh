@@ -22,6 +22,7 @@ usage() {
     echo "  -h, --help                          this message"
     echo "  -v, --verbose                       verbose output"
     echo "  -nf, --number-fruit [NUMBER FRUIT]  number fruit (50 = default)"
+    echo "  -cur, --concurrency [NUMBER]        concurrency level (10 = default)"
     echo "  -pg, --percent-get [PERCENT]        % get requests (100% = default)"
     echo "  -pp, --percent-put [PERCENT]        % put requests (0% = default)"
 }
@@ -33,6 +34,7 @@ VERBOSE=0
 NUMBER_FRUIT=50
 PERCENT_GET=100
 PERCENT_PUT=0
+CONCURRENCY=10
 
 while true
 do
@@ -50,6 +52,11 @@ do
         -nf|--number-fruit)
             shift
             NUMBER_FRUIT=$1
+            shift
+            ;;
+        -cur|--concurrency)
+            shift
+            CONCURRENCY=$1
             shift
             ;;
         -pg|--percent-get)
@@ -100,6 +107,6 @@ docker \
     -e PERCENT_GET=$PERCENT_GET \
     -e PERCENT_PUT=$PERCENT_PUT \
     -i \
-    loadimpact/k6 run --out json=/k6output/foo.json - < "$SCRIPT_DIR_NAME/k6script.js"
+    loadimpact/k6 run --vus $CONCURRENCY --out json=/k6output/foo.json - < "$SCRIPT_DIR_NAME/k6script.js"
 
 exit 0

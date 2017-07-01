@@ -18,7 +18,6 @@ import { check } from "k6";
 import { fruit_ids } from "/k6imports/fruit_ids.js";
 
 export let options = {
-  vus: 10,
   duration: "5s"
 };
 
