@@ -20,7 +20,7 @@ usage() {
     echo "usage: `basename $0` [OPTION...]"
     echo ""
     echo "  -h, --help                          this message"
-    echo "  -v                                  verbose output"
+    echo "  -v, --verbose                       verbose output"
     echo "  -nf, --number-fruit [NUMBER FRUIT]  number fruit (50 = default)"
     echo "  -pg, --percent-get [PERCENT]        % get requests (100% = default)"
     echo "  -pp, --percent-put [PERCENT]        % put requests (0% = default)"
@@ -43,7 +43,7 @@ do
             usage
             exit 0
             ;;
-        -v)
+        -v|--verbose)
             shift
             VERBOSE=1
             ;;
