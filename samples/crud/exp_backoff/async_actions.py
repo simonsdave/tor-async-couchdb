@@ -96,7 +96,7 @@ class AsyncFruitUpdater(AsyncAction):
         assert callback is not None
         self._callback = callback
 
-        afr = AsyncFruitRetriever(self.fruit_id, None)
+        afr = AsyncFruitRetriever(self.fruit_id)
         afr.fetch(self._on_fetch_done)
 
     def _on_fetch_done(self, is_ok, fruit, afr):
