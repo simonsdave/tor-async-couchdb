@@ -16,13 +16,14 @@ SCRIPT_DIR_NAME="$( cd "$( dirname "$0" )" && pwd )"
 usage() {
     echo "usage: `basename $0` [OPTION...]"
     echo ""
-    echo "  -h, --help                          this message"
-    echo "  -v, --verbose                       verbose output"
-    echo "  -nf, --number-fruit [NUMBER FRUIT]  number fruit (50 = default)"
-    echo "  -cur, --concurrency [NUMBER]        concurrency level (10 = default)"
-    echo "  -dur, --duration [DURATION]         duration (1m = default)"
-    echo "  -pg, --percent-get [PERCENT]        % get requests (100% = default)"
-    echo "  -pp, --percent-put [PERCENT]        % put requests (0% = default)"
+    echo "  -h, --help                              this message"
+    echo "  -v, --verbose                           verbose output"
+    echo "  -k6di, --k6-docker-image [IMAGE NAME]   k6 docker image (loadimpact/k6:0.16.0 = default)"
+    echo "  -nf, --number-fruit [NUMBER FRUIT]      number fruit (50 = default)"
+    echo "  -cur, --concurrency [NUMBER]            concurrency level (10 = default)"
+    echo "  -dur, --duration [DURATION]             duration (1m = default)"
+    echo "  -pg, --percent-get [PERCENT]            % get requests (100% = default)"
+    echo "  -pp, --percent-put [PERCENT]            % put requests (0% = default)"
 }
 
 echo_if_verbose() {
@@ -49,6 +50,8 @@ DURATION=1m
 # k6 runs in a docker container and talks to the service
 # being tested on the docker0 bridge
 SERVICE=http://$(ifconfig docker0 | grep 'inet addr:' | sed -e 's/.*addr://g' | sed -e 's/ .*$//g'):8445
+# version 0.16.0 is the last known version that works correctly
+K6_DOCKER_IMAGE=loadimpact/k6:0.16.0
 
 while true
 do
@@ -62,6 +65,11 @@ do
         -v|--verbose)
             shift
             VERBOSE=1
+            ;;
+        -k6di|--k6-docker-image)
+            shift
+            K6_DOCKER_IMAGE=$1
+            shift
             ;;
         -nf|--number-fruit)
             shift
@@ -110,6 +118,7 @@ echo_if_verbose "config: % put = $PERCENT_PUT"
 echo_if_verbose "config: concurrency = $CONCURRENCY"
 echo_if_verbose "config: duration = $DURATION"
 echo_if_verbose "config: service = $SERVICE"
+echo_if_verbose "config: K6 docker image = $K6_DOCKER_IMAGE"
 
 #
 # initialize the database with a bunch of fruit
@@ -131,13 +140,9 @@ K6_OUTPUT_DOT_JSON="k6-output.json"
 echo_if_verbose "config: k6 output = $K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON"
 
 #
-# always use latest version of k6
-#
-docker pull loadimpact/k6
-
-#
 # finally we get to do run the load test
 #
+docker pull $K6_DOCKER_IMAGE
 docker \
     run \
     -v "$K6_OUTPUT_DIR":/k6output \
@@ -146,6 +151,6 @@ docker \
     -e PERCENT_GET=$PERCENT_GET \
     -e PERCENT_PUT=$PERCENT_PUT \
     -i \
-    loadimpact/k6 run --vus $CONCURRENCY --duration $DURATION --out json=/k6output/k6-output.json - < "$SCRIPT_DIR_NAME/k6script.js"
+    $K6_DOCKER_IMAGE run --vus $CONCURRENCY --duration $DURATION --out json=/k6output/k6-output.json - < "$SCRIPT_DIR_NAME/k6script.js"
 
 exit 0
