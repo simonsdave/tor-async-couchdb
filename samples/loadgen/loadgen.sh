@@ -124,6 +124,13 @@ fi
 echo_if_verbose "config: fruit IDs = $FRUIT_IDS_DOT_JS"
 
 #
+# config k6output
+#
+K6_OUTPUT_DIR=$(mktemp -d 2> /dev/null || mktemp -d -t DAS)
+K6_OUTPUT_DOT_JSON="k6-output.json"
+echo_if_verbose "config: k6 output = $K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON"
+
+#
 # always use latest version of k6
 #
 docker pull loadimpact/k6
@@ -133,12 +140,12 @@ docker pull loadimpact/k6
 #
 docker \
     run \
-    -v "$PWD":/k6output \
+    -v "$K6_OUTPUT_DIR":/k6output \
     -v "$FRUIT_IDS_DOT_JS_DIR":/k6imports \
     -e SERVICE=$SERVICE \
     -e PERCENT_GET=$PERCENT_GET \
     -e PERCENT_PUT=$PERCENT_PUT \
     -i \
-    loadimpact/k6 run --vus $CONCURRENCY --duration $DURATION --out json=/k6output/foo.json - < "$SCRIPT_DIR_NAME/k6script.js"
+    loadimpact/k6 run --vus $CONCURRENCY --duration $DURATION --out json=/k6output/k6-output.json - < "$SCRIPT_DIR_NAME/k6script.js"
 
 exit 0
