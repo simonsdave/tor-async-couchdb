@@ -84,8 +84,6 @@ concurrent requests.
 ```bash
 >curl -s -X POST http://127.0.0.1:8445/v1.0/fruits | jq .
 {
-    "_id": "345d17dae686f2b435881085198afc39",
-    "_rev": "1-9e08c14213bb8b4386eea863de966d9e",
     "created_on": "2015-04-22T11:58:41.347308+00:00",
     "fruit": "fig",
     "fruit_id": "455aab1b747e40a89034877e2c963179",
@@ -98,8 +96,6 @@ concurrent requests.
 ```bash
 >curl -s http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | jq .
 {
-    "_id": "345d17dae686f2b435881085198afc39",
-    "_rev": "1-9e08c14213bb8b4386eea863de966d9e",
     "created_on": "2015-04-22T11:58:41.347308+00:00",
     "fruit": "fig",
     "fruit_id": "455aab1b747e40a89034877e2c963179",
@@ -112,8 +108,6 @@ concurrent requests.
 ```bash
 >curl -s -X PUT http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | jq .
 {
-    "_id": "345d17dae686f2b435881085198afc39",
-    "_rev": "2-233923144d85b62e26c13013e9d30eeb",
     "created_on": "2015-04-22T11:58:41.347308+00:00",
     "fruit": "kiwi",
     "fruit_id": "455aab1b747e40a89034877e2c963179",
@@ -121,8 +115,6 @@ concurrent requests.
 }
 >curl -s -X PUT http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | jq .
 {
-    "_id": "345d17dae686f2b435881085198afc39",
-    "_rev": "3-fe7b3d270fa598b88d646687488aa766",
     "created_on": "2015-04-22T11:58:41.347308+00:00",
     "fruit": "orange",
     "fruit_id": "455aab1b747e40a89034877e2c963179",

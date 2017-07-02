@@ -29,8 +29,6 @@ class RequestHandler(tornado.web.RequestHandler):
 
     def fruit_as_dict_for_response_body(self, fruit):
         return {
-            "_id": fruit._id,
-            "_rev": fruit._rev,
             "fruit_id": fruit.fruit_id,
             "color": fruit.color,
             "created_on": fruit.created_on.isoformat(),
