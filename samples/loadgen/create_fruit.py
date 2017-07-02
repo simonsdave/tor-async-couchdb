@@ -12,16 +12,16 @@ def _create_fruit(service_base_url):
     payload = {
     }
     headers = {
-        "Content-Type": "application/json; charset=utf-8",
+        'Content-Type': 'application/json; charset=utf-8',
     }
     response = requests.post(
-        "%s/v1.0/fruits" % service_base_url,
+        '%s/v1.0/fruits' % service_base_url,
         headers=headers,
         data=json.dumps(payload))
     if response.status_code != httplib.CREATED:
         sys.exit(1)
 
-    return response.json()["fruit_id"]
+    return response.json()['fruit_id']
 
 
 class _CommandLineParser(optparse.OptionParser):
@@ -42,7 +42,7 @@ class _CommandLineParser(optparse.OptionParser):
             type=int,
             help=help)
 
-        default = "http://127.0.0.1:8445"
+        default = 'http://127.0.0.1:8445'
         help = 'service - default = %s' % default
         self.add_option(
             '--service',
