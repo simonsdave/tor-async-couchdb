@@ -1,13 +1,7 @@
 //
-// docker run loadimpact/k6 --version
-// docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' couchdb
-// docker run -i loadimpact/k6 run --vus 10 --duration 30s - <script.js
-// docker run -v "$PWD":/k6output -v "$PWD":/k6imports -i loadimpact/k6 run --out json=/k6output/foo.json - <script.js
-//
 // Required Environment variables
 //
-//  SERVICE_IP
-//  SERVICE_PORT
+//  SERVICE
 //
 //  PERCENT_GET
 //  PERCENT_PUT
