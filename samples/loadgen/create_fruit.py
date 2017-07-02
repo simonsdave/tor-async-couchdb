@@ -3,6 +3,7 @@
 import httplib
 import json
 import optparse
+import sys
 
 import requests
 
@@ -17,7 +18,8 @@ def _create_fruit(service_base_url):
         "%s/v1.0/fruits" % service_base_url,
         headers=headers,
         data=json.dumps(payload))
-    assert response.status_code == httplib.CREATED
+    if response.status_code != httplib.CREATED:
+        sys.exit(1)
 
     return response.json()["fruit_id"]
 
@@ -66,3 +68,5 @@ if __name__ == '__main__':
     for i in range(0, clo.number_fruit):
         print '  "%s"%s' % (_create_fruit(clo.service_base_url), ',' if i != (clo.number_fruit - 1) else '')
     print '];'
+
+    sys.exit(0)

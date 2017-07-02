@@ -32,6 +32,11 @@ echo_if_verbose() {
     return 0
 }
 
+echo_to_stderr() {
+    echo ${1:-} >&2
+    return 0
+}
+
 #
 # parse command line arguments
 #
@@ -95,7 +100,7 @@ if [ $# != 0 ]; then
 fi
 
 if [ $(($PERCENT_GET + $PERCENT_PUT)) != 100 ]; then
-    echo "operation percentages must total to 100" >&2
+    echo_to_stderr "operation percentages must total to 100" >&2
     exit 1
 fi
 
@@ -112,6 +117,10 @@ echo_if_verbose "config: service = $SERVICE"
 FRUIT_IDS_DOT_JS_DIR=$(mktemp -d 2> /dev/null || mktemp -d -t DAS)
 FRUIT_IDS_DOT_JS="$FRUIT_IDS_DOT_JS_DIR/fruit_ids.js"
 "$SCRIPT_DIR_NAME/create_fruit.py" --number-fruit=$NUMBER_FRUIT --service=$SERVICE > "$FRUIT_IDS_DOT_JS"
+if [ "$?" != "0" ]; then
+    echo_to_stderr "Error creating fruit"
+    exit 1
+fi
 echo_if_verbose "config: fruit IDs = $FRUIT_IDS_DOT_JS"
 
 #
