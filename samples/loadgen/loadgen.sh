@@ -137,7 +137,7 @@ echo_if_verbose "config: fruit IDs = $FRUIT_IDS_DOT_JS"
 #
 K6_OUTPUT_DIR=$(mktemp -d 2> /dev/null || mktemp -d -t DAS)
 K6_OUTPUT_DOT_JSON="k6-output.json"
-echo_if_verbose "config: k6 output = $K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON"
+echo_if_verbose "config: k6 output in directory = $K6_OUTPUT_DIR"
 
 #
 # finally we get to do run the load test
@@ -152,5 +152,13 @@ docker \
     -e PERCENT_PUT=$PERCENT_PUT \
     -i \
     $K6_DOCKER_IMAGE run --vus $CONCURRENCY --duration $DURATION --out json=/k6output/k6-output.json - < "$SCRIPT_DIR_NAME/k6script.js"
+
+#
+#
+#
+cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
+    jq -c 'select(.metric == "http_req_duration" and .type == "Point") | [.data.time, .data.tags.method, .data.tags.status, .data.value] | @tsv' |
+    sed -e 's/"//g' |
+    sed -e 's/\\t/\t/g'
 
 exit 0
