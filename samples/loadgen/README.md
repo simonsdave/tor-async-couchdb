@@ -25,9 +25,20 @@ usage: loadgen.sh [OPTION...]
 >
 ```
 
-> [loadgen.sh](loadgen.sh) is designed to exercise ```tor-async-couchdb```'s
-> conflict resolution logic which is trigged when multiple requests simultaneously
-> attempt to do things to the same resource.
-> The probability of a conflict being triggered increases both as the number
-> of concurrent requests increases, the percentage of ```PUT``` requests increases
-> and the number of resources decreases.
+[loadgen.sh](loadgen.sh) is designed to exercise ```tor-async-couchdb```'s
+conflict resolution logic which is trigged when multiple requests simultaneously
+attempt to do things to the same resource.
+The probability of a conflict being triggered increases both as the number
+of concurrent requests increases, the percentage of ```PUT``` requests increases
+and the number of resources decreases. For example, here's an example of how to
+run [loadgen.sh](loadgen.sh) to generate lots of conflicts:
+
+```bash
+>./loadgen.sh \
+    --verbose \
+    --concurrency 25 \
+    --number-fruit 10 \
+    --duration 15s \
+    --percent-get 20 \
+    --percent-put 80
+```
