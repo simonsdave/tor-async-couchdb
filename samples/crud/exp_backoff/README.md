@@ -1,4 +1,5 @@
 # Exponential Backoff Strategy Sample
+
 This service implements a simple RESTful service that
 builds on the [retry sample](../retry).
 Specifically, this sample illustrates how
@@ -12,7 +13,7 @@ is the same as for [retry sample](../retry). The only outward difference
 you should be able to detect between this sample and the [retry sample](../retry)
 can be found in the service's logs after running a stress test.
 More specifically, try grepping the service's logs per the example
-below. Contention levels created by the [load generator](../loadgen) 
+below. Contention levels created by the [load generator](../../loadgen) 
 will determine how many retries are attempted.
 
 ```bash

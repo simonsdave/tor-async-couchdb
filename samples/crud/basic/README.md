@@ -1,4 +1,5 @@
 # Basic Sample
+
 This service implements a simple RESTful service that
 demonstrates how the basic features of ```tor-async-couchdb``` are intended to be used.
 This is the first in a series of samples services.
@@ -15,7 +16,7 @@ The data tier is implemented using CouchDB.
 
 # Creating the CouchDB Database
 
-See [db_installer](../db_installer) which describes how to create the CouchDB
+See [db_installer](../../db_installer) which describes how to create the CouchDB
 Database that the sample service will use.
 
 # Running the Service
@@ -68,12 +69,12 @@ OK
 Another way to verify the service is working correctly is to stress
 the service by driving lots of concurrent requests into the service
 and observing that all requests are successfully serviced.
-The [loadgen](../loadgen) utility can be used to generate lots of
+The [loadgen](../../loadgen) utility can be used to generate lots of
 concurrent requests.
 
 >This basic service will successful service lots of concurrent
 >```POST``` and ```GET``` requests so you'll want to ensure that
->[loadgen](../loadgen) only issues lots of these kinds of requests.
+>[loadgen](../../loadgen) only issues lots of these kinds of requests.
 >As we build on this basic sample service we'll enhance
 >the basic service to successfully deal with lots of concurrent
 >```PUT``` and ```DELETE``` requests.
