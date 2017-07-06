@@ -154,10 +154,28 @@ docker \
     $K6_DOCKER_IMAGE run --vus $CONCURRENCY --duration $DURATION --out json=/k6output/k6-output.json - < "$SCRIPT_DIR_NAME/k6script.js"
 
 #
+# translate k6 json output to something that can be used
+# as input to analyze_restful_api_load_test_results
 #
+# :TODO: gotta be a more efficient way to do this:-(
 #
 cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
-    jq -c 'select(.metric == "http_req_duration" and .type == "Point") | [.data.time, .data.tags.method, .data.tags.status, .data.value] | @tsv' |
+    jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "GET" and .data.tags.status == "200") | [.data.time, "GET", 1, .data.value] | @tsv' \
+    > "$K6_OUTPUT_DIR/get_success.tsv"
+
+cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
+    jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "GET" and .data.tags.status != "200") | [.data.time, "GET", 0, .data.value] | @tsv' \
+    > "$K6_OUTPUT_DIR/get_failure.tsv"
+
+cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
+    jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "PUT" and .data.tags.status == "200") | [.data.time, "PUT", 1, .data.value] | @tsv' \
+    > "$K6_OUTPUT_DIR/put_success.tsv"
+
+cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
+    jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "PUT" and .data.tags.status != "200") | [.data.time, "PUT", 0, .data.value] | @tsv' \
+    > "$K6_OUTPUT_DIR/put_failure.tsv"
+
+cat "$K6_OUTPUT_DIR/get_success.tsv" "$K6_OUTPUT_DIR/get_failure.tsv" "$K6_OUTPUT_DIR/put_success.tsv" "$K6_OUTPUT_DIR/put_failure.tsv" |
     sed -e 's/"//g' |
     sed -e 's/\\t/\t/g'
 
