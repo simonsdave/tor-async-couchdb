@@ -3,13 +3,15 @@
 import httplib
 import json
 import optparse
+import random
 import sys
 
 import requests
 
 
-def _create_fruit(service_base_url):
+def _create_fruit(service_base_url, color):
     payload = {
+        'color': color,
     }
     headers = {
         'Content-Type': 'application/json; charset=utf-8',
@@ -64,9 +66,12 @@ if __name__ == '__main__':
     clp = _CommandLineParser()
     (clo, cla) = clp.parse_args()
 
+    colors = ['red', 'orange', 'blue', 'brown', 'yellow', 'pink', 'white', 'black']
+
     print 'export let fruit_ids = ['
     for i in range(0, clo.number_fruit):
-        print '  "%s"%s' % (_create_fruit(clo.service_base_url), ',' if i != (clo.number_fruit - 1) else '')
+        fruit_id = _create_fruit(clo.service_base_url, random.choice(colors))
+        print '  "%s"%s' % (fruit_id, ',' if i != (clo.number_fruit - 1) else '')
     print '];'
 
     sys.exit(0)

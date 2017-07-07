@@ -4,18 +4,28 @@ a sample service running on http://127.0.0.1:8445
 
 import httplib
 import json
+import random
 from sets import Set
 import unittest
 
 import requests
 
-_base_url = "http://127.0.0.1:8445"
+_base_url = 'http://127.0.0.1:8445'
 
 
 class TheTestCase(unittest.TestCase):
 
+    def _get_random_color(cls, but_not_this_color=None):
+        colors = ['red', 'orange', 'blue', 'brown', 'yellow', 'pink', 'white', 'black']
+        while True:
+            color = random.choice(colors)
+            if but_not_this_color is None:
+                return color
+            if but_not_this_color != color:
+                return color
+
     def _get_all(self):
-        url = "%s/v1.0/fruits" % _base_url
+        url = '%s/v1.0/fruits' % _base_url
         response = requests.get(url)
         self.assertEqual(response.status_code, httplib.OK)
         return response.json()
@@ -23,9 +33,9 @@ class TheTestCase(unittest.TestCase):
     def setUp(self):
         fruits = self._get_all()
         for fruit in fruits:
-            fruit_id = fruit.get("fruit_id", None)
+            fruit_id = fruit.get('fruit_id', None)
             self.assertIsNotNone(fruit_id)
-            url = "%s/v1.0/fruits/%s" % (_base_url, fruit_id)
+            url = '%s/v1.0/fruits/%s' % (_base_url, fruit_id)
             response = requests.delete(url)
             self.assertEqual(response.status_code, httplib.OK)
 
@@ -43,16 +53,17 @@ class TheTestCase(unittest.TestCase):
         the_fruit_ids = Set()
         for i in range(0, number_fruits):
             payload = {
+                'color': self._get_random_color(),
             }
             headers = {
-                "Content-Type": "application/json; charset=utf-8",
+                'Content-Type': 'application/json; charset=utf-8',
             }
             create_response = requests.post(
-                "%s/v1.0/fruits" % _base_url,
+                '%s/v1.0/fruits' % _base_url,
                 headers=headers,
                 data=json.dumps(payload))
             self.assertEqual(create_response.status_code, httplib.CREATED)
-            fruit_id = create_response.json().get("fruit_id", None)
+            fruit_id = create_response.json().get('fruit_id', None)
             self.assertIsNotNone(fruit_id)
             the_fruit_ids.add(fruit_id)
 
@@ -61,7 +72,7 @@ class TheTestCase(unittest.TestCase):
             len(the_fruit_ids))
 
         self.assertEqual(
-            Set([fruit["fruit_id"] for fruit in self._get_all()]),
+            Set([fruit['fruit_id'] for fruit in self._get_all()]),
             the_fruit_ids)
 
     def test_crud(self):
@@ -69,22 +80,25 @@ class TheTestCase(unittest.TestCase):
         # Create
         #
         payload = {
+            'color': self._get_random_color(),
         }
         headers = {
-            "Content-Type": "application/json; charset=utf-8",
+            'Content-Type': 'application/json; charset=utf-8',
         }
         create_response = requests.post(
-            "%s/v1.0/fruits" % _base_url,
+            '%s/v1.0/fruits' % _base_url,
             headers=headers,
             data=json.dumps(payload))
         self.assertEqual(create_response.status_code, httplib.CREATED)
-        fruit_id = create_response.json().get("fruit_id", None)
+        fruit_id = create_response.json().get('fruit_id', None)
         self.assertIsNotNone(fruit_id)
+        color = create_response.json().get('color', None)
+        self.assertIsNotNone(color)
 
         #
         # Read
         #
-        url = "%s/v1.0/fruits/%s" % (_base_url, fruit_id)
+        url = '%s/v1.0/fruits/%s' % (_base_url, fruit_id)
         read_response = requests.get(url)
         self.assertEqual(read_response.status_code, httplib.OK)
         self.assertEqual(
@@ -95,12 +109,13 @@ class TheTestCase(unittest.TestCase):
         # Update
         #
         payload = {
+            'color': self._get_random_color(color),
         }
         headers = {
-            "Content-Type": "application/json; charset=utf-8",
+            'Content-Type': 'application/json; charset=utf-8',
         }
         update_response = requests.put(
-            "%s/v1.0/fruits/%s" % (_base_url, fruit_id),
+            '%s/v1.0/fruits/%s' % (_base_url, fruit_id),
             headers=headers,
             data=json.dumps(payload))
         self.assertEqual(update_response.status_code, httplib.OK)
@@ -108,6 +123,6 @@ class TheTestCase(unittest.TestCase):
         #
         # Delete
         #
-        url = "%s/v1.0/fruits/%s" % (_base_url, fruit_id)
+        url = '%s/v1.0/fruits/%s' % (_base_url, fruit_id)
         delete_response = requests.delete(url)
         self.assertEqual(delete_response.status_code, httplib.OK)

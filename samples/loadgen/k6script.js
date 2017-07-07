@@ -13,6 +13,8 @@ import { fruit_ids } from "/k6imports/fruit_ids.js";
 
 let service_base_url = `${__ENV.SERVICE}/v1.0/fruits/`;
 
+let colors = ["red", "orange", "blue", "brown", "yellow", "pink", "white", "black"];
+
 function getRandomFruitID() {
   return fruit_ids[Math.floor(Math.random() * fruit_ids.length)];
 }
@@ -28,7 +30,9 @@ function httpGet() {
 
 function httpPut() {
   let url = service_base_url + getRandomFruitID();
-  let payload = {};
+  let payload = {
+    "color": colors[Math.floor(Math.random() * colors.length)]
+  };
   let params = {
     headers: {
       "Content-Type": "application/json"

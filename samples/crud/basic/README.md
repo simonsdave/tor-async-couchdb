@@ -83,52 +83,62 @@ concurrent requests.
 
 ## Create
 ```bash
->curl -s -X POST http://127.0.0.1:8445/v1.0/fruits | jq .
+>curl \
+  -s \
+  -X POST \
+  -H "Content-Type: application/json" \
+  --data-binary '{"color":"red"}' \
+  http://127.0.0.1:8445/v1.0/fruits | jq .
 {
-    "created_on": "2015-04-22T11:58:41.347308+00:00",
-    "fruit": "fig",
-    "fruit_id": "455aab1b747e40a89034877e2c963179",
-    "updated_on": "2015-04-22T11:58:41.347308+00:00"
+  "color": "red",
+  "updated_on": "2017-07-07T04:58:13.164982+00:00",
+  "created_on": "2017-07-07T04:58:13.164982+00:00",
+  "fruit_id": "861f379335e34316b63e6941ca943a28"
 }
 >
 ```
 
 ## Read
 ```bash
->curl -s http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | jq .
-{
-    "created_on": "2015-04-22T11:58:41.347308+00:00",
-    "fruit": "fig",
-    "fruit_id": "455aab1b747e40a89034877e2c963179",
-    "updated_on": "2015-04-22T11:58:41.347308+00:00"
+>curl -s http://127.0.0.1:8445/v1.0/fruits/861f379335e34316b63e6941ca943a28 | jq .
+{{
+  "color": "red",
+  "updated_on": "2017-07-07T04:58:13.164982+00:00",
+  "created_on": "2017-07-07T04:58:13.164982+00:00",
+  "fruit_id": "861f379335e34316b63e6941ca943a28"
 }
 >
 ```
 
 ## Update
 ```bash
->curl -s -X PUT http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | jq .
+>curl \
+  -s \
+  -X PUT \
+  -H "Content-Type: application/json" \
+  --data-binary '{"color":"blue"}' \
+  http://127.0.0.1:8445/v1.0/fruits/861f379335e34316b63e6941ca943a28 | jq .
 {
-    "created_on": "2015-04-22T11:58:41.347308+00:00",
-    "fruit": "kiwi",
-    "fruit_id": "455aab1b747e40a89034877e2c963179",
-    "updated_on": "2015-04-22T11:58:41.347308+00:00"
+  "color": "blue",
+  "updated_on": "2017-07-07T05:01:29.758764+00:00",
+  "created_on": "2017-07-07T04:58:13.164982+00:00",
+  "fruit_id": "861f379335e34316b63e6941ca943a28"
 }
->curl -s -X PUT http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179 | jq .
+>curl -s -X GET http://127.0.0.1:8445/v1.0/fruits/861f379335e34316b63e6941ca943a28 | jq .
 {
-    "created_on": "2015-04-22T11:58:41.347308+00:00",
-    "fruit": "orange",
-    "fruit_id": "455aab1b747e40a89034877e2c963179",
-    "updated_on": "2015-04-22T11:58:41.347308+00:00"
+  "color": "blue",
+  "updated_on": "2017-07-07T05:01:29.758764+00:00",
+  "created_on": "2017-07-07T04:58:13.164982+00:00",
+  "fruit_id": "861f379335e34316b63e6941ca943a28"
 }
 >
 ```
 
 ## Delete
 ```bash
->curl -s  -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179
+>curl -s  -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:8445/v1.0/fruits/861f379335e34316b63e6941ca943a28
 200
->curl -s  -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:8445/v1.0/fruits/455aab1b747e40a89034877e2c963179
+>curl -s  -o /dev/null -w "%{http_code}\n" -X DELETE http://127.0.0.1:8445/v1.0/fruits/861f379335e34316b63e6941ca943a28
 404
 >
 ```
@@ -136,7 +146,7 @@ concurrent requests.
 ## Read All
 ```bash
 >#create 10 fruit resources
->for i in `seq 10`; do curl -s -X POST http://127.0.0.1:8445/v1.0/fruits; done
+>for i in `seq 10`; do curl -s -X POST -H "Content-Type: application/json" --data-binary '{"color":"red"}' http://127.0.0.1:8445/v1.0/fruits | jq .; done
 >#lots of output cut
 >curl -s http://127.0.0.1:8445/v1.0/fruits | jq .
 >#lots of output cut
