@@ -4,7 +4,7 @@ to create a CouchDB database installer. The database created by
 the installer is used for each of the ```tor-async-couchdb```
 samples.
 
-#Creating the CouchDB Database
+# Creating the CouchDB Database
 
 Create the database on CouchDB running on ```http://127.0.0.1:5984```
 using the installer.

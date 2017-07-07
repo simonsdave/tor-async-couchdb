@@ -141,8 +141,3 @@ concurrent requests.
 >curl -s http://127.0.0.1:8445/v1.0/fruits | jq .
 >#lots of output cut
 ```
-
-# Service's Data Model
-```bash
-curl http://127.0.0.1:5984/tor_async_couchdb_sample/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?include_docs=true
-```
