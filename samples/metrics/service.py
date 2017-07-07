@@ -123,7 +123,8 @@ if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
         datefmt="%Y-%m-%dT%H:%M:%S",
-        format="%(asctime)s.%(msecs)03d+00:00 %(levelname)s %(module)s %(message)s")
+        format="%(asctime)s.%(msecs)03d+00:00 %(levelname)s %(module)s %(message)s",
+        stream=sys.stdout)
 
     async_model_actions.database = clo.database
 
