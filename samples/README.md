@@ -93,5 +93,5 @@ OK
 
 ## [loadgen](loadgen)
 A [k6](https://k6.io) based utility which drives CRUD style
-load through the sample services demonstrating ```tor-async-couchdb```'s
+load through the CRUD sample services demonstrating ```tor-async-couchdb```'s
 conflict resolution logic.
