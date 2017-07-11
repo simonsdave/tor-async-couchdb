@@ -175,8 +175,11 @@ cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
     jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "PUT" and .data.tags.status != "200") | [.data.time, "PUT", 0, .data.value] | @tsv' \
     > "$K6_OUTPUT_DIR/put_failure.tsv"
 
-cat "$K6_OUTPUT_DIR/get_success.tsv" "$K6_OUTPUT_DIR/get_failure.tsv" "$K6_OUTPUT_DIR/put_success.tsv" "$K6_OUTPUT_DIR/put_failure.tsv" |
+K6_OUTPUT_DOT_TSV=$K6_OUTPUT_DIR/k6-output.tsv
+
+cat $K6_OUTPUT_DIR/*.tsv | 
     sed -e 's/"//g' |
-    sed -e 's/\\t/\t/g'
+    sed -e 's/\\t/\t/g' \
+    > "$K6_OUTPUT_DOT_TSV"
 
 exit 0
