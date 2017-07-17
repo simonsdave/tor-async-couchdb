@@ -23,8 +23,7 @@ function httpGet() {
   let url = service_base_url + getRandomFruitID();
   let res = http.get(url);
   check(res, {
-    "get status was 200": (r) => r.status == 200,
-    "get time OK": (r) => r.timings.duration < 150
+    "get status was 200": (r) => r.status == 200
   });
 }
 
@@ -40,8 +39,7 @@ function httpPut() {
   };
   let res = http.put(url, JSON.stringify(payload), params);
   check(res, {
-    "put status was 200": (r) => r.status == 200,
-    "put time OK": (r) => r.timings.duration < 150
+    "put status was 200": (r) => r.status == 200
   });
 }
 
