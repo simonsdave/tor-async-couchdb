@@ -177,7 +177,7 @@ cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
 
 K6_OUTPUT_DOT_TSV=$K6_OUTPUT_DIR/k6-output.tsv
 
-cat $K6_OUTPUT_DIR/*.tsv | 
+cat $(find "$K6_OUTPUT_DIR" -regex '.*/\(put\|get\|post\|delete\)_\(failure\|success\)\.tsv') | 
     sed -e 's/"//g' |
     sed -e 's/\\t/\t/g' \
     > "$K6_OUTPUT_DOT_TSV"
