@@ -21,7 +21,12 @@ function getRandomFruitID() {
 
 function httpGet() {
   let url = service_base_url + getRandomFruitID();
-  let res = http.get(url);
+  let params = {
+    tags: {
+      vu: __VU
+    }
+  };
+  let res = http.get(url, params);
   check(res, {
     "get status was 200": (r) => r.status == 200
   });
@@ -35,6 +40,9 @@ function httpPut() {
   let params = {
     headers: {
       "Content-Type": "application/json"
+    },
+    tags: {
+      vu: __VU
     }
   };
   let res = http.put(url, JSON.stringify(payload), params);
