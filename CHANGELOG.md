@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - SIGINT handler to all samples which is helpful for scripting tests
 
 ### Changed
-- tornado 4.4 -> 4.5.1
+- tornado 4.4 -> 4.5.2
 
 ### Removed
 - ...
