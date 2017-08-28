@@ -27,10 +27,10 @@ apt-get build-dep -y python-pycurl
 #   https://github.com/apache/couchdb-docker
 #
 
-# docker 2.0
+# couchdb 2.0
 docker pull klaemo/couchdb:latest
 
-# docker 1.6.1
+# couchdb 1.6.1
 docker pull couchdb:latest
 
 exit 0
