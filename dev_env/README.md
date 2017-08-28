@@ -14,8 +14,6 @@ the VM you will use ```vagrant ssh```, ```vagrant halt```,
 
 ```bash
 >./create_dev_env.sh simonsdave simonsdave@gmail.com ~/.ssh/id_rsa.pub ~/.ssh/id_rsa
-github username> simonsdave
-github email> simonsdave@gmail.com
 Bringing machine 'default' up with 'virtualbox' provider...
 ==> default: Importing base box 'trusty'...
 .
