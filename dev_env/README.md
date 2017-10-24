@@ -25,11 +25,19 @@ SSH into the VM.
 
 ```bash
 >vagrant ssh
-Welcome to Ubuntu 14.04 LTS (GNU/Linux 3.13.0-27-generic x86_64)
+Welcome to Ubuntu 14.04.5 LTS (GNU/Linux 3.13.0-98-generic x86_64)
 
  * Documentation:  https://help.ubuntu.com/
 
- System information disabled due to load higher than 1.0
+  System information as of Mon Oct 23 15:22:11 UTC 2017
+
+  System load:  0.63              Processes:           81
+  Usage of /:   3.5% of 39.34GB   Users logged in:     0
+  Memory usage: 6%                IP address for eth0: 10.0.2.15
+  Swap usage:   0%
+
+  Graph this data and manage this system at:
+    https://landscape.canonical.com/
 
   Get cloud support with Ubuntu Advantage Cloud Guest:
     http://www.ubuntu.com/business/services/cloud
@@ -37,15 +45,18 @@ Welcome to Ubuntu 14.04 LTS (GNU/Linux 3.13.0-27-generic x86_64)
 0 packages can be updated.
 0 updates are security updates.
 
+New release '16.04.3 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
 
-vagrant@vagrant-ubuntu-trusty-64:~$
+
+~>
 ```
 
 Start the ssh-agent in the background.
 
 ```bash
 ~> eval "$(ssh-agent -s)"
-Agent pid 25657
+Agent pid 25120
 ~>
 ```
 
@@ -61,27 +72,19 @@ Identity added: /home/vagrant/.ssh/id_rsa_github (/home/vagrant/.ssh/id_rsa_gith
 Clone the repo.
 
 ```bash
-vagrant@vagrant-ubuntu-trusty-64:~$ git clone https://github.com/simonsdave/tor-async-couchdb.git
-Cloning into 'tor-async-couchdb'...
-remote: Counting objects: 1114, done.
-remote: Compressing objects: 100% (7/7), done.
-remote: Total 1114 (delta 0), reused 0 (delta 0), pack-reused 1107
-Receiving objects: 100% (1114/1114), 237.13 KiB | 0 bytes/s, done.
-Resolving deltas: 100% (678/678), done.
-Checking connectivity... done.
-vagrant@vagrant-ubuntu-trusty-64:~$
+~> git clone https://github.com/simonsdave/tor-async-couchdb.git
+~>
 ```
 
 Install all pre-reqs.
 
 ```bash
-vagrant@vagrant-ubuntu-trusty-64:~$ cd tor-async-couchdb/
-vagrant@vagrant-ubuntu-trusty-64:~/tor-async-couchdb$ source cfg4dev
-New python executable in env/bin/python
-Installing setuptools, pip...done.
+~> cd tor-async-couchdb/
+~/tor-async-couchdb> source cfg4dev.
 .
 .
 .
+~>
 ```
 
 Run all unit & integration tests.
