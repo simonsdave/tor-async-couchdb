@@ -124,7 +124,7 @@ def _create_seed_docs(database,
     if seed_doc_signer_dir_name:
         try:
             seed_doc_signer = keyczar.Signer.Read(seed_doc_signer_dir_name)
-        except:
+        except Exception:
             _logger.error(
                 "Error creating seed doc signer from '%s'",
                 seed_doc_signer_dir_name)

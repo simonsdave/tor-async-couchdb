@@ -40,7 +40,7 @@ def verify(signer, doc):
     # signature of "dave" and you'll understand the need
     try:
         return signer.Verify(doc_as_utf8_str, sig)
-    except:
+    except Exception:
         pass
     return False
 
