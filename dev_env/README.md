@@ -96,7 +96,7 @@ Install all pre-reqs.
 Run all unit & integration tests.
 
 ```bash
-(env)vagrant@vagrant-ubuntu-trusty-64:~/tor-async-couchdb$ nosetests --with-coverage --cover-branches --cover-erase --cover-package tor_async_couchdb
+(env) ~/tor-async-couchdb> nosetests --with-coverage --cover-branches --cover-erase --cover-package tor_async_couchdb
 ..............................................................................
 Name                                       Stmts   Miss Branch BrPart  Cover
 ----------------------------------------------------------------------------
@@ -109,8 +109,8 @@ tor_async_couchdb/tamper.py                   22      0      2      0   100%
 ----------------------------------------------------------------------------
 TOTAL                                        659     70    120     12    87%
 ----------------------------------------------------------------------
-Ran 78 tests in 1.645s
+Ran 78 tests in 5.907s
 
 OK
-(env)vagrant@vagrant-ubuntu-trusty-64:~/tor-async-couchdb$
+(env) ~/tor-async-couchdb>
 ```
