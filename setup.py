@@ -23,7 +23,6 @@
 #   >pip install -i https://testpypi.python.org/pypi tor_async_couchdb
 #
 import re
-import sys
 from setuptools import setup
 
 #
