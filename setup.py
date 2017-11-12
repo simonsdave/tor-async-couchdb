@@ -12,10 +12,13 @@
 # markdown)
 #
 #   >pandoc README.md -o README.rst
-#   >python setup.py register -r pypitest
-#   >twine upload dist/* -r pypitest
+#   >twine upload dist/* -r testpypi
 #
-# use the package uploaded to pypitest
+# you will be able to find the package at
+#
+#   https://test.pypi.org/project/tor-async-couchdb
+#
+# use the uploaded package
 #
 #   >pip install -i https://testpypi.python.org/pypi tor_async_couchdb
 #
@@ -47,20 +50,14 @@ with open("tor_async_couchdb/__init__.py", "r") as fd:
 if not version:
     raise Exception("Can't locate tor_async_couchdb's version number")
 
-_download_url = "https://github.com/simonsdave/tor-async-couchdb/tarball/v%s" % version
-
 
 def _long_description():
-    """Assuming the following command is used to register the package
-        python setup.py register -r pypitest
-    then sys.argv should be
-        ['setup.py', 'register', '-r', 'pypitest']
-    """
-    if 2 <= len(sys.argv) and sys.argv[1] == 'register':
+    try:
         with open('README.rst', 'r') as f:
             return f.read()
-
-    return 'a long description'
+    except IOError:
+        # simple fix to avoid failure on 'source cfg4dev'
+        return "a long description"
 
 
 # list of valid classifiers @ https://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -102,7 +99,7 @@ setup(
     maintainer_email=_author_email,
     license="MIT",
     url="https://github.com/simonsdave/tor-async-couchdb",
-    download_url=_download_url,
+    download_url="https://github.com/simonsdave/tor-async-couchdb/tarball/v%s" % version,
     keywords=_keywords,
     classifiers=_classifiers,
 )
