@@ -11,6 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - tornado 4.4 -> >=4.5
 - pep8 -> pycodestyle
+- ndg-httpsclient 0.4.3 -> 0.4.4
 
 ### Removed
 - ...
