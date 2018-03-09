@@ -12,6 +12,7 @@ install:
   - until curl http://127.0.0.1:5984 >& /dev/null; do echo "waiting for couchdb to start" && sleep 1; done && curl http://127.0.0.1:5984
   - source cfg4dev
   - pip install coveralls
+  - pip install -r samples/requirements.txt
   # need pandoc installed because it's not provisioned
   # by default and we want to use it below
   - sudo apt-get install -y pandoc
@@ -23,7 +24,6 @@ script:
   - python setup.py sdist --formats=gztar
   - travis_fold end "build.python.packages"
   - nosetests --with-coverage --cover-branches --cover-erase --cover-package tor_async_couchdb
-  - pip install -r samples/requirements.txt
   - samples/test_all_samples.sh
 after_success:
   - coveralls || true
