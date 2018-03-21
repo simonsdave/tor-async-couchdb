@@ -12,6 +12,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - tornado 4.4 -> >=4.5
 - pep8 -> pycodestyle
 - ndg-httpsclient 0.4.3 -> 0.4.4
+- twine 1.10.0 -> 1.11.0
 
 ### Removed
 - ...
