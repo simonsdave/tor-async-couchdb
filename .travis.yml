@@ -17,8 +17,10 @@ install:
   # by default and we want to use it below
   - sudo apt-get install -y pandoc
 script:
+  # pycodestyle 2.4.0 & flake8 3.5.0 aren't compatible - until
+  # that's fixed running pycodestyle directly
   - pycodestyle
-  - flake8
+  # - flake8
   - travis_fold start "build.python.packages"
   - pandoc README.md -o README.rst
   - python setup.py sdist --formats=gztar
