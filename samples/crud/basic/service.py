@@ -65,7 +65,7 @@ class RequestHandler(tornado.web.RequestHandler):
             return None
 
         json_utf8_content_type_reg_ex = re.compile(
-            '^\s*application/json(;\s+charset\=utf-{0,1}8){0,1}\s*$',
+            r'^\s*application/json(;\s+charset\=utf-{0,1}8){0,1}\s*$',
             re.IGNORECASE)
         if not json_utf8_content_type_reg_ex.match(content_type):
             return None
