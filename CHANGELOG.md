@@ -9,7 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - SIGINT handler to all samples which is helpful for scripting tests
 
 ### Changed
-- tornado >=4.5 -> <=4.5.3
+- tornado >=4.5 -> <5.0.0
 - pep8 -> pycodestyle
 - ndg-httpsclient 0.4.3 -> 0.5.0
 - twine 1.10.0 -> 1.11.0
