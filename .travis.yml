@@ -17,6 +17,7 @@ install:
   # by default and we want to use it below
   - sudo apt-get install -y pandoc
 script:
+  - pip check
   - flake8
   - travis_fold start "build.python.packages"
   - pandoc README.md -o README.rst
