@@ -3,7 +3,7 @@
 To increase predicability, it is recommended
 that ```tor_async_couchdb``` development be done on a [Vagrant](http://www.vagrantup.com/) provisioned
 [VirtualBox](https://www.virtualbox.org/)
-VM running [Ubuntu 14.04](http://releases.ubuntu.com/14.04/).
+VM running [Ubuntu 16.04](http://releases.ubuntu.com/16.04/).
 Below are the instructions for spinning up such a VM.
 
 Spin up a VM using [create_dev_env.sh](create_dev_env.sh)
@@ -24,29 +24,18 @@ Bringing machine 'default' up with 'virtualbox' provider...
 SSH into the VM.
 
 ```bash
->vagrant ssh
-Welcome to Ubuntu 14.04.5 LTS (GNU/Linux 3.13.0-98-generic x86_64)
+> vagrant ssh
+Welcome to Ubuntu 16.04.4 LTS (GNU/Linux 4.4.0-119-generic x86_64)
 
- * Documentation:  https://help.ubuntu.com/
-
-  System information as of Mon Oct 23 15:22:11 UTC 2017
-
-  System load:  0.63              Processes:           81
-  Usage of /:   3.5% of 39.34GB   Users logged in:     0
-  Memory usage: 6%                IP address for eth0: 10.0.2.15
-  Swap usage:   0%
-
-  Graph this data and manage this system at:
-    https://landscape.canonical.com/
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
 
   Get cloud support with Ubuntu Advantage Cloud Guest:
     http://www.ubuntu.com/business/services/cloud
 
-0 packages can be updated.
-0 updates are security updates.
-
-New release '16.04.3 LTS' available.
-Run 'do-release-upgrade' to upgrade to it.
+7 packages can be updated.
+7 updates are security updates.
 
 
 ~>
