@@ -15,6 +15,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - twine 1.10.0 -> 1.11.0
 - python-dateutil 2.7.0 -> 2.7.3
 - dev env trusty -> xenial
+- twine 1.11.0 -> 1.12.1
 
 ### Removed
 - ...
