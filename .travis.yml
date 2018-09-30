@@ -12,18 +12,19 @@ install:
   - until curl http://127.0.0.1:5984 >& /dev/null; do echo "waiting for couchdb to start" && sleep 1; done && curl http://127.0.0.1:5984
   - source cfg4dev
   - pip install coveralls
-  - pip install -r samples/requirements.txt
-  # need pandoc installed because it's not provisioned
-  # by default and we want to use it below
-  - sudo apt-get install -y pandoc
+  - docker pull koalaman/shellcheck:latest
+  ##### need pandoc installed because it's not provisioned
+  ##### by default and we want to use it below
+  ##### - sudo apt-get install -y pandoc
 script:
-  - pip check
-  - flake8
-  - travis_fold start "build.python.packages"
-  - pandoc README.md -o README.rst
-  - python setup.py sdist --formats=gztar
-  - travis_fold end "build.python.packages"
-  - nosetests --with-coverage --cover-branches --cover-erase --cover-package tor_async_couchdb
-  - samples/test_all_samples.sh
+  - run_pip_check.sh
+  - run_flake8.sh
+  - run_shellcheck.sh -v
+  ##### - travis_fold start "build.python.packages"
+  ##### - pandoc README.md -o README.rst
+  ##### - python setup.py sdist --formats=gztar
+  ##### - travis_fold end "build.python.packages"
+  - run_unit_tests.sh
+  ##### - samples/test_all_samples.sh
 after_success:
   - coveralls || true
