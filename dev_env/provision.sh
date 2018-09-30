@@ -7,16 +7,6 @@
 set -e
 
 #
-# for python development
-#
-apt-get install -y python-virtualenv
-apt-get install -y python-dev
-apt-get build-dep -y python-crypto
-apt-get install -y libcurl4-openssl-dev
-apt-get install -y libffi-dev
-apt-get build-dep -y python-pycurl
-
-#
 # couchdb is run out of docker containers to
 #
 #   1/ simplify dev env provisioning

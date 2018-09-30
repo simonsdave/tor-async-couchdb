@@ -1,5 +1,4 @@
-configure_dev_env()
-{
+if [ -f "$PWD/requirements.txt" ]; then
     STATUS_CODE=$(curl \
         -s \
         -o /dev/null \
@@ -9,24 +8,28 @@ configure_dev_env()
         docker run -d -p 5984:5984 --name couchdb couchdb
     fi
 
-    if [ ! -f "$PWD/requirements.txt" ]; then
-        echo "Must source this script from repo's root directory"
-        return 1
-    fi
+    # per guidelines in https://github.com/simonsdave/dev-env
+    export DEV_ENV_SOURCE_CODE=$PWD
+    export DEV_ENV_DOCKER_IMAGE="simonsdave/tor-async-couchdb-xenial-dev-env:build"
+    export DEV_ENV_PACKAGE=tor_async_couchdb
 
+    # :TODO: do we actually need to be using virtualenv anymore?
     if [ -d "$PWD/env" ]; then
         source "$PWD/env/bin/activate"
     else
         virtualenv env
         source "$PWD/env/bin/activate"
 
-        pip install --requirement "$PWD/requirements.txt"
+        # this is really here so that travis will work
+        if ! which run_shellcheck.sh; then
+            pip install git+https://github.com/simonsdave/dev-env.git@master
+        fi
+
+        "$PWD/dev_env/build-docker-image.sh" "$DEV_ENV_DOCKER_IMAGE"
     fi
 
     export PATH=$PATH:"$PWD/bin"
     export PYTHONPATH="$PWD"
-
-    return 0
-}
-
-configure_dev_env
+else
+    echo "Must source this script from repo's root directory"
+fi

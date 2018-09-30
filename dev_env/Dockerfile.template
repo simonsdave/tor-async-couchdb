@@ -1,0 +1,22 @@
+FROM simonsdave/xenial-dev-env:%DEV_ENV_VERSION%
+
+MAINTAINER Dave Simons
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get install -y build-essential
+RUN apt-get install -y libffi-dev
+RUN apt-get install -y python-crypto
+RUN apt-get install -y libcurl4-openssl-dev
+RUN apt-get install -y libssl-dev
+
+COPY requirements.txt /tmp/requirements.txt
+COPY setup.py /tmp/setup.py
+RUN mkdir /tmp/tor_async_couchdb
+COPY tor_async_couchdb/__init__.py /tmp/tor_async_couchdb/__init__.py
+
+RUN cd /tmp && pip install --requirement "/tmp/requirements.txt"
+
+ENV DEBIAN_FRONTEND newt
+
+WORKDIR /app
