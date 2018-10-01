@@ -19,7 +19,7 @@ install:
 script:
   - run_pip_check.sh
   - run_flake8.sh
-  - run_shellcheck.sh -v
+  ##### - run_shellcheck.sh -v
   ##### - travis_fold start "build.python.packages"
   ##### - pandoc README.md -o README.rst
   ##### - python setup.py sdist --formats=gztar
