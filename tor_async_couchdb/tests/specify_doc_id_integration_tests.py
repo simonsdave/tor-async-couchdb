@@ -17,7 +17,7 @@ from .. import async_model_actions
 from ..model import Model
 
 # db names must start with a letter
-_database_url = r'http://127.0.0.1:5984/a%s' % uuid.uuid4().hex
+_database_url = r'http://172.17.0.1:5984/a%s' % uuid.uuid4().hex
 
 
 class Fruit(Model):
