@@ -23,9 +23,9 @@ from .. import async_model_actions
 from .. import tamper
 from ..model import Model
 
-_database_url = r"http://127.0.0.1:5984/davewashere"
+_database_url = r"http://172.17.0.1:5984/davewashere"
 
-# curl http://127.0.0.1:5984/davewashere/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?include_docs=true
+# curl http://172.17.0.1:5984/davewashere/_design/fruit_by_fruit_id/_view/fruit_by_fruit_id?include_docs=true
 _design_doc_name = "fruit_by_fruit_id"
 _design_doc = (
     '{'
