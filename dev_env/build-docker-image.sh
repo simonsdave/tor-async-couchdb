@@ -21,6 +21,8 @@ cp "$PROJECT_HOME_DIR/requirements.txt" "$CONTEXT_DIR/."
 cp "$PROJECT_HOME_DIR/setup.py" "$CONTEXT_DIR/."
 mkdir "$CONTEXT_DIR/tor_async_couchdb"
 cp "$PROJECT_HOME_DIR/tor_async_couchdb/__init__.py" "$CONTEXT_DIR/tor_async_couchdb/."
+mkdir "$CONTEXT_DIR/samples"
+cp "$PROJECT_HOME_DIR/samples/requirements.txt" "$CONTEXT_DIR/samples/."
 
 DEV_ENV_VERSION=$(cat "$SCRIPT_DIR_NAME/dev-env-version.txt")
 
