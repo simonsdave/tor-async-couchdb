@@ -2,14 +2,7 @@ language: python
 python:
   - "2.7"
 sudo: required
-services:
-  - couchdb
 install:
-  # couchdb seems to take a bit to get started on travis
-  # the until loop makes sure couchdb is running before
-  # cfg4dev is sourced and the curl after the until loop
-  # gives us couchdb version info
-  - until curl http://127.0.0.1:5984 >& /dev/null; do echo "waiting for couchdb to start" && sleep 1; done && curl http://127.0.0.1:5984
   - source cfg4dev
   - pip install coveralls
   - docker pull koalaman/shellcheck:latest
@@ -19,12 +12,15 @@ install:
 script:
   - run_pip_check.sh
   - run_flake8.sh
-  - run_shellcheck.sh -v
+  ##### - run_shellcheck.sh -v
   ##### - travis_fold start "build.python.packages"
   ##### - pandoc README.md -o README.rst
   ##### - python setup.py sdist --formats=gztar
   ##### - travis_fold end "build.python.packages"
   - run_unit_tests.sh
-  ##### - samples/test_all_samples.sh
+  - travis_fold start "sample.unit.tests"
+  - docker run --rm --volume "$DEV_ENV_SOURCE_CODE:/app" "$DEV_ENV_DOCKER_IMAGE" /app/samples/test_all_samples.sh
+  - travis_fold end "sample.unit.tests"
 after_success:
+  - sed -i -e "s|/app/|$DEV_ENV_SOURCE_CODE/|g" "$DEV_ENV_SOURCE_CODE/.coverage"
   - coveralls || true

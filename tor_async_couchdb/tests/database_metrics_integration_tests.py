@@ -46,7 +46,7 @@ class DatabaseCreator(object):
     def __init__(self, number_design_docs=1, create=True, delete=True):
         self.create = create
         self.delete = delete
-        self.database_url = r"http://127.0.0.1:5984/a%s" % uuid.uuid4().hex
+        self.database_url = r"http://172.17.0.1:5984/a%s" % uuid.uuid4().hex
 
         self.design_docs = {}
         for i in range(0, number_design_docs):

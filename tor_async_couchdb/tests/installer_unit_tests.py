@@ -49,6 +49,7 @@ class CommandLineParserTestCase(unittest.TestCase):
     def test_invalid_command_line(self):
         sys_dot_arv = [
             '--dave=bindle',
+            '--host=http://172.17.0.1:5984',
         ]
         with SysDotArgcPatcher(sys_dot_arv):
             description = uuid.uuid4().hex
@@ -72,6 +73,7 @@ class MainTestCase(unittest.TestCase):
         sys_dot_arv = [
             '--create=true',
             '--delete=false',
+            '--host=http://172.17.0.1:5984',
         ]
         with SysDotArgcPatcher(sys_dot_arv):
             clp = NoUsageCommandLineParser(description, default_database)
@@ -81,6 +83,7 @@ class MainTestCase(unittest.TestCase):
         sys_dot_arv = [
             '--create=false',
             '--delete=true',
+            '--host=http://172.17.0.1:5984',
         ]
         with SysDotArgcPatcher(sys_dot_arv):
             clp = NoUsageCommandLineParser(description, default_database)
