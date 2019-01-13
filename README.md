@@ -1,5 +1,5 @@
 # tor-async-couchdb
-![Maintained](https://img.shields.io/maintenance/yes/2018.svg?style=flat)
+![Maintained](https://img.shields.io/maintenance/yes/2019.svg?style=flat)
 ![license](https://img.shields.io/pypi/l/tor-async-couchdb.svg?style=flat)
 ![PythonVersions](https://img.shields.io/pypi/pyversions/tor-async-couchdb.svg?style=flat)
 ![status](https://img.shields.io/pypi/status/tor-async-couchdb.svg?style=flat)
