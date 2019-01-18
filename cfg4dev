@@ -3,11 +3,11 @@ if [ -f "$PWD/requirements.txt" ]; then
         -s \
         -o /dev/null \
         --write-out '%{http_code}' \
-        http://127.0.0.1:5984)
+        http://127.0.0.1:5984 2>&1)
     if [ $? -ne 0 ] || [ "$STATUS_CODE" != "200" ]; then
         docker run -d -p 5984:5984 --name couchdb couchdb
         echo -n "waiting for couchdb to start "
-        until curl -s -o /dev/null http://127.0.0.1:5984; do echo -n "." && sleep 1; done
+        until curl -s -o /dev/null http://127.0.0.1:5984 2>&1; do echo -n "." && sleep 1; done
         echo ""
     fi
 
