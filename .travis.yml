@@ -6,21 +6,16 @@ install:
   - source cfg4dev
   - pip install coveralls
   - docker pull koalaman/shellcheck:latest
-  ##### need pandoc installed because it's not provisioned
-  ##### by default and we want to use it below
-  ##### - sudo apt-get install -y pandoc
 script:
   - run_pip_check.sh
   - run_flake8.sh
-  ##### - run_shellcheck.sh -v
-  ##### - travis_fold start "build.python.packages"
-  ##### - pandoc README.md -o README.rst
-  ##### - python setup.py sdist --formats=gztar
-  ##### - travis_fold end "build.python.packages"
+  - run_shellcheck.sh -v
+  - travis_fold start "build.python.packages"
+  - python setup.py bdist_wheel sdist --formats=gztar
+  - travis_fold end "build.python.packages"
   - run_unit_tests.sh
   - travis_fold start "sample.unit.tests"
   - docker run --rm --volume "$DEV_ENV_SOURCE_CODE:/app" "$DEV_ENV_DOCKER_IMAGE" /app/samples/test_all_samples.sh
   - travis_fold end "sample.unit.tests"
 after_success:
-  - sed -i -e "s|/app/|$DEV_ENV_SOURCE_CODE/|g" "$DEV_ENV_SOURCE_CODE/.coverage"
   - coveralls || true
