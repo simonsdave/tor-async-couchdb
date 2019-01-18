@@ -25,6 +25,9 @@ mkdir "$CONTEXT_DIR/samples"
 cp "$PROJECT_HOME_DIR/samples/requirements.txt" "$CONTEXT_DIR/samples/."
 
 DEV_ENV_VERSION=$(cat "$SCRIPT_DIR_NAME/dev-env-version.txt")
+if [ "${DEV_ENV_VERSION:-}" == "master" ]; then
+    DEV_ENV_VERSION=latest
+fi
 
 TEMP_DOCKERFILE=$CONTEXT_DIR/Dockerfile
 cp "$SCRIPT_DIR_NAME/Dockerfile.template" "$TEMP_DOCKERFILE"
