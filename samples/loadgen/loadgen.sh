@@ -14,7 +14,7 @@ SCRIPT_DIR_NAME="$( cd "$( dirname "$0" )" && pwd )"
 # some utility functions
 #
 usage() {
-    echo "usage: `basename $0` [OPTION...]"
+    echo "usage: $(basename "$0") [OPTION...]"
     echo ""
     echo "  -h, --help                              this message"
     echo "  -v, --verbose                           verbose output"
@@ -27,14 +27,14 @@ usage() {
 }
 
 echo_if_verbose() {
-    if [ 1 -eq ${VERBOSE:-0} ]; then
-        echo ${1:-}
+    if [ "1" -eq "${VERBOSE:-0}" ]; then
+        echo "${1:-}"
     fi
     return 0
 }
 
 echo_to_stderr() {
-    echo ${1:-} >&2
+    echo "${1:-}" >&2
     return 0
 }
 
@@ -55,8 +55,7 @@ K6_DOCKER_IMAGE=loadimpact/k6:0.16.0
 
 while true
 do
-    OPTION=`echo ${1:-} | awk '{print tolower($0)}'`
-    case "$OPTION" in
+    case "${1,,}" in
         -h|--help)
             shift
             usage
@@ -107,7 +106,7 @@ if [ $# != 0 ]; then
     exit 1
 fi
 
-if [ $(($PERCENT_GET + $PERCENT_PUT)) != 100 ]; then
+if [ $((PERCENT_GET + PERCENT_PUT)) != 100 ]; then
     echo_to_stderr "operation percentages must total to 100" >&2
     exit 1
 fi
@@ -125,8 +124,7 @@ echo_if_verbose "config: K6 docker image = $K6_DOCKER_IMAGE"
 #
 FRUIT_IDS_DOT_JS_DIR=$(mktemp -d 2> /dev/null || mktemp -d -t DAS)
 FRUIT_IDS_DOT_JS="$FRUIT_IDS_DOT_JS_DIR/fruit_ids.js"
-"$SCRIPT_DIR_NAME/create_fruit.py" --number-fruit=$NUMBER_FRUIT --service=$SERVICE > "$FRUIT_IDS_DOT_JS"
-if [ "$?" != "0" ]; then
+if ! "$SCRIPT_DIR_NAME/create_fruit.py" "--number-fruit=$NUMBER_FRUIT" "--service=$SERVICE" > "$FRUIT_IDS_DOT_JS"; then
     echo_to_stderr "Error creating fruit"
     exit 1
 fi
@@ -142,16 +140,16 @@ echo_if_verbose "config: k6 output in directory = $K6_OUTPUT_DIR"
 #
 # finally we get to do run the load test
 #
-docker pull $K6_DOCKER_IMAGE
+docker pull "$K6_DOCKER_IMAGE"
 docker \
     run \
     -v "$K6_OUTPUT_DIR":/k6output \
     -v "$FRUIT_IDS_DOT_JS_DIR":/k6imports \
-    -e SERVICE=$SERVICE \
-    -e PERCENT_GET=$PERCENT_GET \
-    -e PERCENT_PUT=$PERCENT_PUT \
+    -e "SERVICE=$SERVICE" \
+    -e "PERCENT_GET=$PERCENT_GET" \
+    -e "PERCENT_PUT=$PERCENT_PUT" \
     -i \
-    $K6_DOCKER_IMAGE run --vus $CONCURRENCY --duration $DURATION --out json=/k6output/k6-output.json - < "$SCRIPT_DIR_NAME/k6script.js"
+    "$K6_DOCKER_IMAGE" run --vus "$CONCURRENCY" --duration "$DURATION" --out json=/k6output/k6-output.json - < "$SCRIPT_DIR_NAME/k6script.js"
 
 #
 # translate k6 json output to something that can be used
@@ -159,25 +157,25 @@ docker \
 #
 # :TODO: gotta be a more efficient way to do this:-(
 #
-cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
-    jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "GET" and .data.tags.status == "200") | [.data.time, "GET", 1, .data.tags.vu, .data.value] | @tsv' \
+jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "GET" and .data.tags.status == "200") | [.data.time, "GET", 1, .data.tags.vu, .data.value] | @tsv' \
+    < "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" \
     > "$K6_OUTPUT_DIR/get_success.tsv"
 
-cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
-    jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "GET" and .data.tags.status != "200") | [.data.time, "GET", 0, .data.tags.vu, .data.value] | @tsv' \
+jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "GET" and .data.tags.status != "200") | [.data.time, "GET", 0, .data.tags.vu, .data.value] | @tsv' \
+    < "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" \
     > "$K6_OUTPUT_DIR/get_failure.tsv"
 
-cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
-    jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "PUT" and .data.tags.status == "200") | [.data.time, "PUT", 1, .data.tags.vu, .data.value] | @tsv' \
+jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "PUT" and .data.tags.status == "200") | [.data.time, "PUT", 1, .data.tags.vu, .data.value] | @tsv' \
+    < "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" \
     > "$K6_OUTPUT_DIR/put_success.tsv"
 
-cat "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" | \
-    jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "PUT" and .data.tags.status != "200") | [.data.time, "PUT", 0, .data.tags.vu, .data.value] | @tsv' \
+jq -c 'select(.metric == "http_req_duration" and .type == "Point" and .data.tags.method == "PUT" and .data.tags.status != "200") | [.data.time, "PUT", 0, .data.tags.vu, .data.value] | @tsv' \
+    < "$K6_OUTPUT_DIR/$K6_OUTPUT_DOT_JSON" \
     > "$K6_OUTPUT_DIR/put_failure.tsv"
 
 K6_OUTPUT_DOT_TSV=$K6_OUTPUT_DIR/k6-output.tsv
 
-cat $(find "$K6_OUTPUT_DIR" -regex '.*/\(put\|get\|post\|delete\)_\(failure\|success\)\.tsv') | 
+find "$K6_OUTPUT_DIR" -regex '.*/\(put\|get\|post\|delete\)_\(failure\|success\)\.tsv' |
     sed -e 's/"//g' |
     sed -e 's/\\t/\t/g' \
     > "$K6_OUTPUT_DOT_TSV"
