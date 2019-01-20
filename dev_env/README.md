@@ -75,6 +75,9 @@ Install all pre-reqs.
 
 ```bash
 ~> cd tor-async-couchdb/
+```
+
+```bash
 ~/tor-async-couchdb> source cfg4dev.
 .
 .
@@ -82,13 +85,15 @@ Install all pre-reqs.
 ~>
 ```
 
-Run all unit & integration tests.
+Run all unit tests.
 
 ```bash
-(env) ~/tor-async-couchdb> nosetests --with-coverage --cover-branches --cover-erase --cover-package tor_async_couchdb
+(env) ~/tor-async-couchdb> run_unit_tests.sh
+Coverage.py warning: --include is ignored because --source is set (include-ignored)
 ..............................................................................
 Name                                       Stmts   Miss Branch BrPart  Cover
 ----------------------------------------------------------------------------
+tor_async_couchdb/__init__.py                  1      1      0      0     0%
 tor_async_couchdb/async_model_actions.py     399      1     58      2    99%
 tor_async_couchdb/clparserutil.py             47      0     10      0   100%
 tor_async_couchdb/installer.py               154     69     42     10    51%
@@ -96,9 +101,9 @@ tor_async_couchdb/model.py                    16      0      6      0   100%
 tor_async_couchdb/retry_strategy.py           21      0      2      0   100%
 tor_async_couchdb/tamper.py                   22      0      2      0   100%
 ----------------------------------------------------------------------------
-TOTAL                                        659     70    120     12    87%
+TOTAL                                        660     71    120     12    87%
 ----------------------------------------------------------------------
-Ran 78 tests in 5.907s
+Ran 78 tests in 4.568s
 
 OK
 (env) ~/tor-async-couchdb>
