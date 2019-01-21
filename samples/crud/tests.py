@@ -10,7 +10,7 @@ import unittest
 
 import requests
 
-_base_url = 'http://127.0.0.1:8445'
+_base_url = 'http://service:8445'
 
 
 class TheTestCase(unittest.TestCase):

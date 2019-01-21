@@ -49,7 +49,7 @@ CONCURRENCY=10
 DURATION=1m
 # k6 runs in a docker container and talks to the service
 # being tested on the docker0 bridge
-SERVICE=http://$(ifconfig docker0 | grep 'inet addr:' | sed -e 's/.*addr://g' | sed -e 's/ .*$//g'):8445
+SERVICE=http://service:8445
 # version 0.16.0 is the last known version that works correctly
 K6_DOCKER_IMAGE=loadimpact/k6:0.16.0
 
@@ -124,7 +124,7 @@ echo_if_verbose "config: K6 docker image = $K6_DOCKER_IMAGE"
 #
 FRUIT_IDS_DOT_JS_DIR=$(mktemp -d 2> /dev/null || mktemp -d -t DAS)
 FRUIT_IDS_DOT_JS="$FRUIT_IDS_DOT_JS_DIR/fruit_ids.js"
-if ! "$SCRIPT_DIR_NAME/create_fruit.py" "--number-fruit=$NUMBER_FRUIT" "--service=$SERVICE" > "$FRUIT_IDS_DOT_JS"; then
+if ! docker run --rm --network "$DEV_ENV_NETWORK" --volume "$DEV_ENV_SOURCE_CODE:/app" "$DEV_ENV_DOCKER_IMAGE" "/app/samples/loadgen/create_fruit.py" "--number-fruit=$NUMBER_FRUIT" "--service=$SERVICE" > "$FRUIT_IDS_DOT_JS"; then
     echo_to_stderr "Error creating fruit"
     exit 1
 fi
@@ -143,6 +143,8 @@ echo_if_verbose "config: k6 output in directory = $K6_OUTPUT_DIR"
 docker pull "$K6_DOCKER_IMAGE"
 docker \
     run \
+    --rm \
+    --network "$DEV_ENV_NETWORK" \
     -v "$K6_OUTPUT_DIR":/k6output \
     -v "$FRUIT_IDS_DOT_JS_DIR":/k6imports \
     -e "SERVICE=$SERVICE" \

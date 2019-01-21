@@ -220,7 +220,7 @@ class CommandLineParser(optparse.OptionParser):
             type='int',
             help=help)
 
-        default = '127.0.0.1'
+        default = '0.0.0.0'
         help = 'ip - default = %s' % default
         self.add_option(
             '--ip',
@@ -230,7 +230,7 @@ class CommandLineParser(optparse.OptionParser):
             type='string',
             help=help)
 
-        default = r'http://127.0.0.1:5984/tor_async_couchdb_sample'
+        default = r'http://couchdb:5984/tor_async_couchdb_sample'
         help = 'database - default = %s' % default
         self.add_option(
             '--database',

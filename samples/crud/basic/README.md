@@ -22,8 +22,13 @@ Database that the sample service will use.
 # Running the Service
 
 ## Command line options
+
 ```bash
->./service.py --help
+> docker run \
+    --rm \
+    --volume "$DEV_ENV_SOURCE_CODE:/app" \
+    "$DEV_ENV_DOCKER_IMAGE" \
+    /app/samples/crud/basic/service.py --help
 Usage: service.py [options]
 
 This service implements a simple RESTful service that demonstrates how tor-
@@ -32,31 +37,45 @@ async-couchdb was intended to be used.
 Options:
   -h, --help           show this help message and exit
   --port=PORT          port - default = 8445
-  --ip=IP              ip - default = 127.0.0.1
+  --ip=IP              ip - default = 0.0.0.0
   --database=DATABASE  database - default =
-                       http://127.0.0.1:5984/tor_async_couchdb_sample_basic
+                       http://couchdb:5984/tor_async_couchdb_sample
 ```
 
 ## Startup
+
 ```bash
->./service.py
-2015-04-22T11:56:57.724+00:00 INFO service service started and listening on http://127.0.0.1:8445 talking to database http://127.0.0.1:5984/tor_async_couchdb_sample_basic
+> docker run \
+    --rm \
+    --name service \
+    --network "$DEV_ENV_NETWORK" \
+    -p 8445:8445 \
+    --volume "$DEV_ENV_SOURCE_CODE:/app" \
+    "$DEV_ENV_DOCKER_IMAGE" \
+    /app/samples/crud/basic/service.py
+2019-01-20T23:52:16.013+00:00 INFO service service started and listening on http://127.0.0.1:8445 talking to database http://couchdb:5984/tor_async_couchdb_sample
 ```
 
 # Is the Service Working?
 
 ## Integration Tests
+
 Once you have spun up the sample services you can run
 a sanity test suite against the service using a
 [nose](https://nose.readthedocs.org/en/latest/) runnable
 integration test suite in [```tests.py```](../tests.py).
 The test suite is hard-coded to talk to a service at
-[http://127.0.0.1:8445](http://127.0.0.1:8445) so edit
+[http://service:8445](http://service:8445) so edit
 the test if you are running the service at a different
 endpoint.
 
 ```bash
->nosetests tests.py
+> docker run \
+    --rm \
+    --network "$DEV_ENV_NETWORK" \
+    --volume "$DEV_ENV_SOURCE_CODE:/app" \
+    "$DEV_ENV_DOCKER_IMAGE" \
+    nosetests /app/samples/crud/tests.py
 ...
 ----------------------------------------------------------------------
 Ran 3 tests in 0.646s
@@ -66,6 +85,7 @@ OK
 ```
 
 ## Stress Tests
+
 Another way to verify the service is working correctly is to stress
 the service by driving lots of concurrent requests into the service
 and observing that all requests are successfully serviced.
@@ -101,7 +121,7 @@ concurrent requests.
 ## Read
 ```bash
 >curl -s http://127.0.0.1:8445/v1.0/fruits/861f379335e34316b63e6941ca943a28 | jq .
-{{
+{
   "color": "red",
   "updated_on": "2017-07-07T04:58:13.164982+00:00",
   "created_on": "2017-07-07T04:58:13.164982+00:00",
