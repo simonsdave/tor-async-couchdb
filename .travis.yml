@@ -16,7 +16,7 @@ script:
   - travis_fold end "build.python.packages"
   - run_unit_tests.sh
   - travis_fold start "sample.unit.tests"
-  - docker run --rm --network "$DEV_ENV_NETWORK" --volume "$DEV_ENV_SOURCE_CODE:/app" "$DEV_ENV_DOCKER_IMAGE" /app/samples/test_all_samples.sh
+  - samples/test_all_samples.sh
   - travis_fold end "sample.unit.tests"
 after_success:
   - coveralls || true
