@@ -10,11 +10,10 @@ of ```tor-async-couchdb```.
 Each of the samples is structured per
 the [Data, context and interaction (DCI)](http://en.wikipedia.org/wiki/Data,_context_and_interaction)
 paradigm.
-
-	* model.py contains model classes (DCI's *data*)
-	* async_action.py contains classes that implement async operations which operate on models (DCI's *interaction*)
-	* service.py contains all Tornado request handlers and the service's mainline - request handlers
-	  create instances of async actions to async'ly operate on models (DCI's *context*)
+* model.py contains model classes (DCI's *data*)
+* async_action.py contains classes that implement async operations which operate on models (DCI's *interaction*)
+* service.py contains all Tornado request handlers and the service's mainline - request handlers
+create instances of async actions to async'ly operate on models (DCI's *context*)
 
 ## [basic](crud/basic)
 
