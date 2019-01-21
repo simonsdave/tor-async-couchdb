@@ -7,7 +7,7 @@ import unittest
 
 import requests
 
-_base_url = 'http://127.0.0.1:8445/v1.0/_health'
+_base_url = 'http://service:8445/v1.0/_health'
 
 
 class TheTestCase(unittest.TestCase):

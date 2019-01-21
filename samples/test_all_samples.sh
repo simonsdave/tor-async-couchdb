@@ -10,42 +10,40 @@ set -e
 SCRIPT_DIR_NAME="$( cd "$( dirname "$0" )" && pwd )"
 
 run_sample() {
-    SAMPLE_DIR=$1
+    SERVICE_DIR=$1
     UNIT_TESTS_DIR=$2
-    DATABASE_HOST=http://172.17.0.1:5984
+
+    DATABASE_HOST=http://couchdb:5984
     DATABASE=tor_async_couchdb_sample
-    echo "running tests for sample \"$SAMPLE_DIR\""
 
-    pushd "$SCRIPT_DIR_NAME" >& /dev/null || exit 1
+    echo "running tests for sample \"$SERVICE_DIR\""
 
+    docker run \
+        --rm \
+        --network "$DEV_ENV_NETWORK" \
+        --volume "$DEV_ENV_SOURCE_CODE:/app" \
+        "$DEV_ENV_DOCKER_IMAGE" \
+        /app/samples/db_installer/installer.py "--host=$DATABASE_HOST" --delete=true --create=true
 
-    "./db_installer/installer.py" \
-        --delete=true \
-        --create=true \
-        --host=$DATABASE_HOST \
-        --database=$DATABASE
-    SERVICE_DOT_PY=./$SAMPLE_DIR/service.py
-    SERVICE_OUTPUT=$(mktemp)
-    "$SERVICE_DOT_PY" --database=$DATABASE_HOST/$DATABASE >& "$SERVICE_OUTPUT" &
-    SERVICE_PID=$!
-    sleep 1
-    if ! ps --pid $SERVICE_PID >& /dev/null; then
-        echo "error starting \"$SERVICE_DOT_PY\". pre-req's installed?" >&2
-        exit 1
-    fi
+    SERVICE_CONTAINER_ID=$(docker run \
+        -d \
+        --rm \
+        --name service \
+        --network "$DEV_ENV_NETWORK" \
+        --volume "$DEV_ENV_SOURCE_CODE:/app" \
+        "$DEV_ENV_DOCKER_IMAGE" \
+        "/app/samples/$SERVICE_DIR/service.py" "--database=$DATABASE_HOST/$DATABASE")
 
-    nosetests "$UNIT_TESTS_DIR"
+    docker run \
+        --rm \
+        --network "$DEV_ENV_NETWORK" \
+        --volume "$DEV_ENV_SOURCE_CODE:/app" \
+        "$DEV_ENV_DOCKER_IMAGE" \
+        nosetests "/app/samples/$UNIT_TESTS_DIR/tests.py"
 
-    kill -INT $SERVICE_PID
-    rm "$SERVICE_OUTPUT"
-    "./db_installer/installer.py" \
-        --delete=true \
-        --create=false \
-        --host=$DATABASE_HOST \
-        --database=$DATABASE
-    echo "finished tests for sample \"$SAMPLE_DIR\""
+    docker kill service
 
-    popd >& /dev/null || exit 1
+    echo "finished tests for sample \"$SERVICE_DIR\""
 }
 
 run_crud_sample() {
