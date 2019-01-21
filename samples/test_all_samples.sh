@@ -7,8 +7,6 @@
 
 set -e
 
-SCRIPT_DIR_NAME="$( cd "$( dirname "$0" )" && pwd )"
-
 run_sample() {
     SERVICE_DIR=$1
     UNIT_TESTS_DIR=$2
@@ -41,7 +39,7 @@ run_sample() {
         "$DEV_ENV_DOCKER_IMAGE" \
         nosetests "/app/samples/$UNIT_TESTS_DIR/tests.py"
 
-    docker kill service
+    docker kill "$SERVICE_CONTAINER_ID" > /dev/null
 
     echo "finished tests for sample \"$SERVICE_DIR\""
 }
