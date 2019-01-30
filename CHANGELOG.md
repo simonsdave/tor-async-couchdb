@@ -18,7 +18,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - twine 1.11.0 -> 1.12.1
 
 ### Removed
-- ...
+- removed ```kill-and-remove-all-docker-containers.sh```
 
 ## [0.50.1] - [2017-02-12]
 
