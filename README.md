@@ -1,5 +1,5 @@
 # tor-async-couchdb
-![Maintained](https://img.shields.io/maintenance/yes/2019.svg?style=flat)
+![Maintained](https://img.shields.io/maintenance/no/2018.svg?style=flat)
 ![license](https://img.shields.io/pypi/l/tor-async-couchdb.svg?style=flat)
 ![PythonVersions](https://img.shields.io/pypi/pyversions/tor-async-couchdb.svg?style=flat)
 ![status](https://img.shields.io/pypi/status/tor-async-couchdb.svg?style=flat)
@@ -7,6 +7,10 @@
 [![Requirements Status](https://requires.io/github/simonsdave/tor-async-couchdb/requirements.svg?branch=master)](https://requires.io/github/simonsdave/tor-async-couchdb/requirements/?branch=master)
 [![Build Status](https://travis-ci.org/simonsdave/tor-async-couchdb.svg)](https://travis-ci.org/simonsdave/tor-async-couchdb)
 [![Coverage Status](https://coveralls.io/repos/simonsdave/tor-async-couchdb/badge.svg)](https://coveralls.io/r/simonsdave/tor-async-couchdb)
+
+```
+Repo Status = as of EO '18 this repo is no longer being maintained.
+```
 
 ```tor-async-couchdb``` is an opinionated [Tornado](http://www.tornadoweb.org/en/stable/)
 [async](http://tornado.readthedocs.org/en/latest/guide/async.html) client
