@@ -4,8 +4,6 @@
 ![PythonVersions](https://img.shields.io/pypi/pyversions/tor-async-couchdb.svg?style=flat)
 ![status](https://img.shields.io/pypi/status/tor-async-couchdb.svg?style=flat)
 [![PyPI](https://img.shields.io/pypi/v/tor-async-couchdb.svg?style=flat)](https://pypi.python.org/pypi/tor-async-couchdb)
-[![Build Status](https://travis-ci.org/simonsdave/tor-async-couchdb.svg)](https://travis-ci.org/simonsdave/tor-async-couchdb)
-[![Coverage Status](https://coveralls.io/repos/simonsdave/tor-async-couchdb/badge.svg)](https://coveralls.io/r/simonsdave/tor-async-couchdb)
 
 ```
 Repo Status = as of EO '18 this repo is no longer being maintained.
