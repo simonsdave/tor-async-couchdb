@@ -4,7 +4,6 @@
 ![PythonVersions](https://img.shields.io/pypi/pyversions/tor-async-couchdb.svg?style=flat)
 ![status](https://img.shields.io/pypi/status/tor-async-couchdb.svg?style=flat)
 [![PyPI](https://img.shields.io/pypi/v/tor-async-couchdb.svg?style=flat)](https://pypi.python.org/pypi/tor-async-couchdb)
-[![Requirements Status](https://requires.io/github/simonsdave/tor-async-couchdb/requirements.svg?branch=master)](https://requires.io/github/simonsdave/tor-async-couchdb/requirements/?branch=master)
 [![Build Status](https://travis-ci.org/simonsdave/tor-async-couchdb.svg)](https://travis-ci.org/simonsdave/tor-async-couchdb)
 [![Coverage Status](https://coveralls.io/repos/simonsdave/tor-async-couchdb/badge.svg)](https://coveralls.io/r/simonsdave/tor-async-couchdb)
 
